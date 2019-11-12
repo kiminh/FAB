@@ -1,5 +1,6 @@
 from src.DDPG_BN.RL_brain import DDPG
 from src.DDPG_BN.config import config
+from src.data_type import config as data_type
 from src.DDPG_BN.RL_brain import OrnsteinUhlenbeckNoise
 import pandas as pd
 import numpy as np
@@ -53,7 +54,7 @@ def adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_wi
 def run_env(budget_para):
     # 训练
     print('data loading')
-    test_data = pd.read_csv(config['data_path'] + config['campaign_id'] + '/test_' + config['type'] + '.csv', header=None).drop([0])
+    test_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/test_' + data_type['type'] + '.csv', header=None).drop([0])
     test_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2] \
         = test_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2].astype(
         int)
@@ -62,7 +63,7 @@ def run_env(budget_para):
         float)
     test_data = test_data.values
 
-    train_data = pd.read_csv(config['data_path'] + config['campaign_id'] + '/train_' + config['type'] + '.csv')
+    train_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/train_' + data_type['type'] + '.csv')
     train_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2] \
         = train_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2].astype(
         int)
@@ -84,7 +85,7 @@ def run_env(budget_para):
             np.sum(train_data[train_data[:, config['data_hour_index']] == i][:, config['data_clk_index']]))
 
     td_error, action_loss = 0, 0
-    eCPC = choose_eCPC(config['campaign_id'], original_ctr)
+    eCPC = choose_eCPC(data_type['campaign_id'], original_ctr)
     # 由启发式算法得到最优eCPC 1458-60920.22773088766,38767.41764692851,33229.21512593873, 22152.81008395915‬
     # 3386-77901.22125145316‬,47939.21307781733,35954.409808363,23969.60653890866‬
 

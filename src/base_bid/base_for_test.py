@@ -4,7 +4,7 @@ import math
 import pandas as pd
 import numpy as np
 from src.base_bid.fit_c import fit_c
-from src.base_bid.config import config
+from src.data_type import config as data_type
 import os
 random.seed(10)
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
         os.mkdir('result')
 
     # 从训练数据中读取到初始ecpc和初始ctr
-    train_data = pd.read_csv(config['data_path'] + config['campaign_id'] + '/train_' + config['type'] + '.csv', header=None).drop(0, axis=0)
+    train_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/train_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
     train_data.iloc[:, 1: 4] \
             = train_data.iloc[:, 1 : 4].astype(
             int)
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     clicks_prices = [] # clk and price
     total_cost = 0 # total original cost during the test data
     # 从测试数据中读取测试数据
-    test_data = pd.read_csv(config['data_path'] + config['campaign_id'] + '/test_' + config['type'] + '.csv', header=None).drop(0, axis=0)
+    test_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/test_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
     test_data.iloc[:, 1: 4] \
             = test_data.iloc[:, 1 : 4].astype(
             int)
@@ -122,12 +122,12 @@ if __name__ == '__main__':
     # parameters setting for each bidding strategy
     budget_proportions = [2, 4, 8, 16]
 
-    fo = open('result/' + config['campaign_id'] + 'results_test.txt', 'w') # rtb.results.txt
+    fo = open('result/' + data_type['campaign_id'] + 'results_test.txt', 'w') # rtb.results.txt
     header = "prop\tprofits\tclks\treal_clks\tbids\timps\treal_imps\tbudget\tspend\tcpm\talgo\tpara"
     fo.write(header + '\n')
     print(header)
     for k, proportion in enumerate(budget_proportions):
         algo_paras = {"lin": [0], "bidding_opt": [0]}
         for algo in algo_paras:
-            simulate_one_bidding_strategy(bidding_opt_c, clicks_prices, pctrs, total_cost, proportion, algo, fo, config['campaign_id'])
+            simulate_one_bidding_strategy(bidding_opt_c, clicks_prices, pctrs, total_cost, proportion, algo, fo, data_type['campaign_id'])
 

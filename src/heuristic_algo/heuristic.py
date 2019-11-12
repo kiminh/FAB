@@ -4,7 +4,7 @@ import math
 import pandas as pd
 import numpy as np
 import os
-from src.heuristic_algo.config import config
+from src.data_type import config as data_type
 random.seed(10)
 
 def bidding_lin(pctr, base_ctr, base_bid): # 启发式算法
@@ -62,7 +62,7 @@ def to_train_results(campaign):
         os.mkdir('result')
 
     # 从训练数据中读取到初始ecpc和初始ctr
-    train_data = pd.read_csv(config['data_path'] + config['campaign_id'] + '/train_' + config['type'] + '.csv', header=None).drop(0, axis=0)
+    train_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/train_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
     train_data.iloc[:, 1: 4] \
         = train_data.iloc[:, 1 : 4].astype(
         int)
@@ -103,9 +103,9 @@ if not os.path.exists('result'):
     os.mkdir('result')
 
 if __name__ == '__main__':
-    campaign = config['campaign_id']
-    if not os.path.exists('result/' + campaign + '/results_train.txt'):
-        to_train_results(campaign)  # 生成训练结果
+    campaign = data_type['campaign_id']
+    
+    to_train_results(campaign)  # 生成训练结果
 
     fi = open('result/' + campaign + '/results_train.txt', 'r') # rtb.result.1458.txt
     fo = open('result/' + campaign + '/results_train.txt'.replace('.txt', '.best.perf.txt'), 'w')

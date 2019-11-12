@@ -1,5 +1,4 @@
 config = {
-    'e_greedy': 0.9,
     'learning_rate_a': 1e-4,
     'learning_rate_c': 1e-3,
     'reward_decay': 1,
@@ -12,13 +11,8 @@ config = {
     'data_marketprice_index': 2, # 16:train-fm,2
     'data_feature_index': 1, # 15:train-fm,1
     'state_feature_num': 1, #,1
-    'data_path': '../../data/',
-    'campaign_id': '1458', # 1458-11：auc: 0.8355834288341183， 12：auc: 0.8239031627513401； 3386-11：auc: 0.7506862214110933 ， 12： auc: 0.7322348908530179
-    'type': 'sample',
     # ctr 预测参数：./ffm-train -l 0.00001 -k 10 -t 20 -r 0.03 -s {nr_thread} {save}train_{data_name}_{day}.ffm
-    'train_date': str(20130606), # sample 328481 328 22067108
-    'test_date': str(20130607), # sample 307176 307 19441889
-    'budget_para': [1/2],
+    'budget_para': [1/4],
     'train_episodes': 50000,
     'neuron_nums_c_1': 50,
     'neuron_nums_c_2': 40,
