@@ -28,54 +28,18 @@ def generate_data(campaign_id):
     print(len(train_data_df), np.sum(train_data_df.iloc[:, 1]), np.sum(train_data_df.iloc[:, 2]))
     print(len(test_data_df), np.sum(test_data_df.iloc[:, 1]), np.sum(test_data_df.iloc[:, 2]))
 
-    train_clks = np.sum(train_data_df.iloc[:, 1])
-    train_auc_nums = len(train_data_df)
     test_clks = np.sum(test_data_df.iloc[:, 1])
     test_auc_nums = len(test_data_df)
 
-    return train_clks, train_auc_nums, test_clks, test_auc_nums
+    return test_clks, test_auc_nums
 
 # 对原始数据进行负采样，以对比FAB是否对环境具有动态适应性
-def down_sample(campaign_id, train_clks, train_auc_nums, test_clks, test_auc_nums):
+def down_sample(campaign_id,test_clks, test_auc_nums):
     # 负采样后达到的点击率
     CLICK_RATE = 0.001  # 1:1000
 
-    click = train_clks
-    total = train_auc_nums
-    sample_rate = click / (CLICK_RATE * (total - click))
-    # 原始数据中的点击和曝光总数
-    print('clicks: {0} impressions: {1}\n'.format(click, total))
-    # 一个负例被选中的概率，每多少个负例被选中一次
-    print('Train sample_rate is:', sample_rate)
-
-    # 获取训练样本
-    sample_rate = sample_rate
-
-    with open(campaign_id + '/train_sample.csv', 'w') as fo:
-        fi = open(campaign_id + '/train_data.csv')
-        p = 0  # 原始正样本
-        n = 0  # 原始负样本
-        nn = 0  # 剩余的负样本
-        c = 0  # 总数
-        for t, line in enumerate(fi, start=1):
-            if t == 1:
-                fo.write(line)
-            else:
-                c += 1
-                label = line.split(',')[1]  # 是否点击标签
-                if int(label) == 0:
-                    n += 1
-                    if random.randint(0, train_auc_nums) <= train_auc_nums * sample_rate:  # down sample, 选择对应数据量的负样本
-                        fo.write(line)
-                        nn += 1
-                else:
-                    p += 1
-                    fo.write(line)
-
-            if t % 1000000 == 0:
-                print(t)
-        fi.close()
-    print('训练数据负采样完成')
+    train_data = pd.read_csv(campaign_id + '/train_data.csv')
+    train_data.to_csv(campaign_id + '/train_sample.csv', index=None) # 训练集保持不变
 
     click = test_clks
     total = test_auc_nums
@@ -228,14 +192,14 @@ def to_RLB_data(campaign_id, train_data, test_data):
 
 
 if __name__ == '__main__':
-    campaign_id = '1458'
+    campaign_id = '3386'
     type = 'sample' # down sample - sample; no sample - data
 
     print('######Generate Train and Test Datas######\n')
-    train_clks, train_auc_nums, test_clks, test_auc_nums = generate_data(campaign_id)
+    test_clks, test_auc_nums = generate_data(campaign_id)
 
     print('######Down Sample Datas######\n')
-    down_sample(campaign_id, train_clks, train_auc_nums, test_clks, test_auc_nums)
+    down_sample(campaign_id, test_clks, test_auc_nums)
 
     train_data = pd.read_csv(campaign_id + '/train_' + type + '.csv', header=None).drop([0])
     test_data = pd.read_csv(campaign_id + '/test_' + type + '.csv', header=None).drop([0])
