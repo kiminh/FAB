@@ -184,9 +184,9 @@ def run_env(budget_para):
     train_data.iloc[:, [0, 2, 3]] = train_data.iloc[:, [0, 2, 3]].astype(int)
     train_data.iloc[:, [1]] = train_data.iloc[:, [1]].astype(float)
 
-    config['train_budget'] = np.sum(train_data[:, 2])
+    config['train_budget'] = np.sum(train_data.iloc[:, 2])
     config['train_auc_num'] = len(train_data)
-    original_ctr = np.sum(train_data[:, 0]) / len(train_data)
+    original_ctr = np.sum(train_data.iloc[:, 0]) / len(train_data)
 
     auc_num = config['train_auc_num']
     budget = config['train_budget'] * budget_para
@@ -313,7 +313,7 @@ def run_test(budget_para, original_ctr):
     test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
     test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
 
-    config['test_budget'] = np.sum(test_data[:, 2])
+    config['test_budget'] = np.sum(test_data.iloc[:, 2])
     config['test_auc_num'] = len(test_data)
 
     auc_num = config['test_auc_num']
