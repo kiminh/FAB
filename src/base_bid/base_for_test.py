@@ -80,6 +80,8 @@ def simulate_one_bidding_strategy(bidding_opt_c, cases, ctrs, tcost, proportion,
 if __name__ == '__main__':
     if not os.path.exists('result'):
         os.mkdir('result')
+    elif not os.path.exists('result/' + data_type['campaign_id']):
+        os.mkdir('result/' + data_type['campaign_id'])
 
     # 从训练数据中读取到初始ecpc和初始ctr
     train_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/train_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
