@@ -99,12 +99,15 @@ def to_train_results(campaign):
         for algo in algo_paras:
             simulate_one_bidding_strategy(original_ctr, clicks_prices, pctrs, total_cost, proportion, algo, algo_paras, fo)
 
-if not os.path.exists('result'):
-    os.mkdir('result')
-
 if __name__ == '__main__':
     campaign = data_type['campaign_id']
-    
+
+    result_path = 'result'
+    if not os.path.exists(result_path):
+        os.mkdir(result_path)
+    elif not os.path.exists(result_path + '/' + campaign):
+        os.mkdir(result_path + '/' + campaign)
+
     to_train_results(campaign)  # 生成训练结果
 
     fi = open('result/' + campaign + '/results_train.txt', 'r') # rtb.result.1458.txt
