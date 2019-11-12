@@ -5,8 +5,6 @@ import os
 
 random.seed(1)
 
-campaign_id = '1458'
-
 def generate_data(campaign_id):
     # 生成FAB使用的原始数据
     train_log = pd.read_csv(campaign_id + '/11_log.csv') # ipinyou 2013/06/11作为训练集
