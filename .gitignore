@@ -6,10 +6,17 @@
 /src/__pycache__/
 /src/base_bid/__pycache__/
 /src/base_bid/result/
+/src/DDPG/__pycache__/
+/src/DDPG/result/
+/src/DDPG/result_adjust_reward/
+/src/DDPG/result_profit/
 /src/DDPG_BN/__pycache__/
 /src/DDPG_BN/result/
 /src/DDPG_BN/result_adjust_reward/
 /src/DDPG_BN/result_profit/
+/src/DRLB/__pycache__/
+/src/DRLB/data/
+/src/DRLB/result/
 /src/heuristic_algo/__pycache__/
 /src/heuristic_algo/result/
 /src/RLB/python/__pycache__/

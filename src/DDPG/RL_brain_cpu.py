@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import random
-from src.DDPG_BN.Actor_Critic import Actor, Critic
+from src.DDPG.Actor_Critic import Actor, Critic
 
 if not os.path.exists('result'):
     os.mkdir('result')

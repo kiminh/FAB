@@ -1,10 +1,12 @@
-from src.DDPG_BN.RL_brain import DDPG
-from src.DDPG_BN.config import config
-from src.data_type import config as data_type
-from src.DDPG_BN.RL_brain import OrnsteinUhlenbeckNoise
 import pandas as pd
 import numpy as np
 import datetime
+from src.DDPG_BN.config import config
+from src.data_type import config as data_type
+if data_type['is_gpu'] == 0:
+    from src.DDPG_BN.RL_brain_cpu import DDPG, OrnsteinUhlenbeckNoise
+else:
+    from src.DDPG_BN.RL_brain_gpu import DDPG, OrnsteinUhlenbeckNoise
 
 def choose_eCPC(campaign, original_ctr):
     results_train_best = open('../heuristic_algo/result/' + campaign + '/results_train.best.perf.txt', 'r')

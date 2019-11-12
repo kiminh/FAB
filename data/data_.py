@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+# 生成FAB使用的原始数据
+
 campaign_id = '1458'
 train_log = pd.read_csv(campaign_id + '/11_log.csv')
 test_log = pd.read_csv(campaign_id + '/12_log.csv')
