@@ -1,6 +1,14 @@
 import pandas as pd
+import os
 
 campaign_id ='3386'
+
+RLB_data_path = '../src/RLB/data/'
+if not os.path.exists(RLB_data_path):
+    os.mkdir(RLB_data_path)
+elif not os.path.exists(RLB_data_path + 'bid-model'):
+    os.mkdir(RLB_data_path + 'bid-model')
+
 type = 'sample'
 
 origin_train_data = pd.read_csv(campaign_id + '/train_' + type + '.csv').values

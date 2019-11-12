@@ -1,4 +1,4 @@
-from src.RLB.python.utility import *
+from src.RLB.utility import *
 import config
 import pandas as pd
 

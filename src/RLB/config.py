@@ -1,15 +1,19 @@
 import _pickle as pickle
 import numpy as np
 import pandas as pd
+import os
 
-dataPath = "../data/"
+dataPath = "data/"
 projectPath = dataPath + "rlb-dp/"
 
 ipinyouPath = dataPath + "ipinyou-data/"
 
 ipinyou_camps = ["1458"]
 
-logPath = '../result/' + ipinyou_camps[0]
+logPath = 'result/' + ipinyou_camps[0]
+
+if not os.path.exists(logPath):
+	os.mkdir(logPath)
 
 ipinyou_max_market_price = 300
 

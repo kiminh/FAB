@@ -4,11 +4,11 @@ import numpy as np
 # 生成FAB使用的原始数据
 
 campaign_id = '1458'
-train_log = pd.read_csv(campaign_id + '/11_log.csv')
-test_log = pd.read_csv(campaign_id + '/12_log.csv')
+train_log = pd.read_csv(campaign_id + '/11_log.csv') # ipinyou 2013/06/11作为训练集
+test_log = pd.read_csv(campaign_id + '/12_log.csv') # ipinyou 2013/06/12作为测试集
 
-train_ctr = pd.read_csv(campaign_id + '/11_test_submission.csv')
-test_ctr = pd.read_csv(campaign_id + '/12_test_submission.csv')
+train_ctr = pd.read_csv(campaign_id + '/11_test_submission.csv') # ipinyou 2013/06/11训练集的预测点击率文件
+test_ctr = pd.read_csv(campaign_id + '/12_test_submission.csv') # ipinyou 2013/06/12测试集的预测点击率文件
 
 train_log_values = train_log.values
 train_data = {'ctr': train_ctr.values[:, 1] * 1000, 'clk': train_log_values[:, 0],

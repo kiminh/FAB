@@ -1,7 +1,6 @@
-import src.RLB.python.config as config
-from src.RLB.python.rlb_dp_i import RLB_DP_I
-from src.RLB.python.utility import *
-import os
+import src.RLB.config as config
+from src.RLB.rlb_dp_i import RLB_DP_I
+from src.RLB.utility import *
 
 obj_type = "clk"
 clk_vp = 1

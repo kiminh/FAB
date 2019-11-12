@@ -4,6 +4,9 @@ import numpy as np
 
 random.seed(999)
 
+'''
+  对原始数据进行负采样，以对比FAB是否对环境具有动态适应性
+'''
 campaign_id = '3386'
 
 train_data = pd.read_csv(campaign_id + '/train_data.csv')
@@ -64,15 +67,13 @@ print(np.sum(train_sample.iloc[:, 2]))
 
 test_clks = int(np.sum(test_data.iloc[:, 1]))
 test_auc_nums = len(test_data)
-# '+config['test_date']+'一天
+
 def getTestSampleRate():
-    click = test_clks  # '+config['test_date']+'一天
-    total = test_auc_nums  # '+config['test_date']+'一天
+    click = test_clks
+    total = test_auc_nums
     rate = click / (CLICK_RATE * (total - click))
     # 原始数据中的点击和曝光总数
     print('clicks: {0} impressions: {1}\n'.format(click, total))
-    # 一个负例被选中的概率，每多少个负例被选中一次
-    # print('sample rate: {0} sample num: {1}'.format(rate, 1 / rate))
     print('sample_rate is:',rate)
     return rate
 

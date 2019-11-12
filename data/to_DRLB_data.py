@@ -1,5 +1,9 @@
 import pandas as pd
 import numpy as np
+import os
+
+if not os.path.exists('../src/DRLB/data/'):
+    os.mkdir('../src/DRLB/data/')
 
 campaign_id = '3386'
 
