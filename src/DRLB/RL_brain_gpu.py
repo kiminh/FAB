@@ -83,7 +83,7 @@ class DRLB:
             self.feature_numbers, self.action_numbers).cuda()
 
         # 优化器
-        self.optimizer = torch.optim.SGD(self.eval_net.parameters(), lr=self.lr, momentum=0.95)
+        self.optimizer = torch.optim.RMSprop(self.eval_net.parameters(), lr=self.lr, alpha=0.95)
         # 损失函数为，均方损失函数
         self.loss_func = nn.MSELoss().cuda()
 

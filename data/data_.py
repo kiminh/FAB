@@ -79,7 +79,7 @@ def down_sample(campaign_id,test_clks, test_auc_nums):
     print('测试数据负采样完成')
 
 # 生成DRLB所需的数据
-def to_DRLB_data(campaign_id, train_data, test_data):
+def to_DRLB_data(campaign_id, type, train_data, test_data):
     DRLB_data_path = '../src/DRLB/data/'
     if not os.path.exists(DRLB_data_path):
         os.mkdir(DRLB_data_path)
@@ -125,7 +125,7 @@ def to_DRLB_data(campaign_id, train_data, test_data):
     train_to_data = {'clk': clk_arrays, 'pCTR': ctr_arrays, 'pay_price': pay_price_arrays,
                      'time_fraction': origin_time_arrays}
     train_to_data_df = pd.DataFrame(data=train_to_data)
-    train_to_data_df.to_csv('../src/DRLB/data/' + campaign_id + '/train_DRLB.csv', index=None)
+    train_to_data_df.to_csv('../src/DRLB/data/' + campaign_id + '/train_DRLB_' + type + '.csv', index=None)
 
     # test_data
     test_data.iloc[:, [5]] = test_data.iloc[:, [5]].astype(str)  # 类型强制转换
@@ -166,10 +166,10 @@ def to_DRLB_data(campaign_id, train_data, test_data):
     test_to_data = {'clk': clk_arrays, 'pCTR': ctr_arrays, 'pay_price': pay_price_arrays,
                     'time_fraction': origin_time_arrays}
     test_to_data_df = pd.DataFrame(data=test_to_data)
-    test_to_data_df.to_csv('../src/DRLB/data/' + campaign_id + '/test_DRLB.csv', index=None)
+    test_to_data_df.to_csv('../src/DRLB/data/' + campaign_id + '/test_DRLB_' + type + '.csv', index=None)
 
 
-def to_RLB_data(campaign_id, train_data, test_data):
+def to_RLB_data(campaign_id, type, train_data, test_data):
     RLB_data_path = '../src/RLB/data/'
     if not os.path.exists(RLB_data_path):
         os.mkdir(RLB_data_path)
@@ -185,10 +185,10 @@ def to_RLB_data(campaign_id, train_data, test_data):
                      'pctr': test_data[:, 4].astype(float), 'hour': test_data[:, 3].astype(int)}
 
     rlb_train_data_df = pd.DataFrame(data=rlb_train_data)
-    rlb_train_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/train.theta.txt', index=None,
+    rlb_train_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/train.theta.' + type + '.txt', index=None,
                              header=None)
     rlb_test_data_df = pd.DataFrame(data=rlb_test_data)
-    rlb_test_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/test.theta.txt', index=None, header=None)
+    rlb_test_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/test.theta.' + type + 'txt', index=None, header=None)
 
 
 if __name__ == '__main__':
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     test_data = pd.read_csv(campaign_id + '/test_' + type + '.csv', header=None).drop([0])
 
     print('######To RLB Datas######\n')
-    to_RLB_data(campaign_id, train_data, test_data)
+    to_RLB_data(campaign_id, type, train_data, test_data)
 
     print('######To DRLB Datas######\n')
-    to_DRLB_data(campaign_id, train_data, test_data)
+    to_DRLB_data(campaign_id, type, train_data, test_data)

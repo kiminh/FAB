@@ -180,7 +180,7 @@ def choose_init_lamda(campaign, original_ctr):
     return init_lamda
 
 def run_env(budget_para):
-    train_data = pd.read_csv('data/' + config['campaign_id'] + '/train_DRLB.csv', header=None).drop([0])
+    train_data = pd.read_csv('data/' + config['campaign_id'] + '/train_DRLB_' + data_type['type'] + '.csv', header=None).drop([0])
     train_data.iloc[:, [0, 2, 3]] = train_data.iloc[:, [0, 2, 3]].astype(int)
     train_data.iloc[:, [1]] = train_data.iloc[:, [1]].astype(float)
 
@@ -309,7 +309,7 @@ def run_env(budget_para):
     return optimal_lamda
 
 def run_test(budget_para, original_ctr):
-    test_data = pd.read_csv('data/' + config['campaign_id'] + '/test_DRLB.csv', header=None).drop([0])
+    test_data = pd.read_csv('data/' + config['campaign_id'] + '/test_DRLB' + data_type['type'] + '.csv', header=None).drop([0])
     test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
     test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
 

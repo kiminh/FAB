@@ -83,7 +83,7 @@ class DRLB:
             self.feature_numbers, self.action_numbers)
 
         # 优化器
-        self.optimizer = torch.optim.SGD(self.eval_net.parameters(), lr=self.lr, momentum=0.95)
+        self.optimizer = torch.optim.RMSprop(self.eval_net.parameters(), lr=self.lr, alpha=0.95)
         # 损失函数为，均方损失函数
         self.loss_func = nn.MSELoss()
 
@@ -185,5 +185,5 @@ class DRLB:
 
     def control_epsilon(self, t):
         # 逐渐增加epsilon，增加行为的利用性
-        r_epsilon = 2e-5  # 降低速率
+        r_epsilon = 0.01  # 降低速率
         self.epsilon = max(0.95 - r_epsilon * t, 0.05)

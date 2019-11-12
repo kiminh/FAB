@@ -1,6 +1,7 @@
 import src.RLB.config as config
 from src.RLB.rlb_dp_i import RLB_DP_I
 from src.RLB.utility import *
+from src.data_type import config as data_type
 
 obj_type = "clk"
 clk_vp = 1
@@ -24,7 +25,7 @@ for c0 in c0_a:
 
 	for camp in camps:
 		camp_info = config.get_camp_info(camp, src)
-		auction_in = open(data_path + camp + "/test.theta.txt", "r")
+		auction_in = open(data_path + camp + "/test.theta." + data_type['type'] + ".txt", "r")
 		opt_obj = Opt_Obj(obj_type, int(clk_vp * camp_info["cost_train"] / camp_info["clk_train"]))
 		B = int(camp_info["cost_train"] / camp_info["imp_train"] * c0 * N)
 
@@ -34,7 +35,7 @@ for c0 in c0_a:
 				data_path + camp + "/bid-model/v_nb_N={}.txt".format(N))
 
 		# RLB
-		auction_in = open(data_path + camp + "/test.theta.txt", "r")
+		auction_in = open(data_path + camp + "/test.theta." + data_type['type'] + ".txt", "r")
 		rlb_dp_i = RLB_DP_I(camp_info, opt_obj, gamma)
 		setting = "{}, camp={}, algo={}, N={}, c0={}" \
 			.format(src, camp, "rlb", N, c0)
