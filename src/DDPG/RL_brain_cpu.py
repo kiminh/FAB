@@ -6,13 +6,6 @@ import os
 import random
 from src.DDPG.Actor_Critic import Actor, Critic
 
-if not os.path.exists('result'):
-    os.mkdir('result')
-elif not os.path.exists('result_profit'):
-    os.mkdir('result_profit')
-elif not os.path.exists('result_adjust_reward'):
-    os.mkdir('result_adjust_reward')
-
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)

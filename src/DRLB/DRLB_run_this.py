@@ -35,7 +35,7 @@ def run_reward_net(train_data, state_array):
 
         RewardNet.store_state_action_reward(V)
 
-        if len(state_array) >= config['batch_size']:
+        if len(RewardNet.memory_D2) >= config['batch_size'] and len(RewardNet.memory_D2) % config['batch_size'] == 0:
             RewardNet.learn()
 
 def statistics(B_t, origin_t_spent, origin_t_win_imps,
@@ -197,6 +197,7 @@ def run_env(budget_para):
     init_lamda = choose_init_lamda(config['campaign_id'], original_ctr)
     optimal_lamda = 0
     test_records_array = []
+    test_actions_array = []
     for episode in range(config['train_episodes']):
         print('--------第{}轮训练--------\n'.format(episode + 1))
         B_t = [0 for i in range(96)]
@@ -287,24 +288,29 @@ def run_env(budget_para):
               '利润{}, 预算{}, 花费{}, CPM{}, {}'.format(episode + 1, episode_imps, episode_win_imps, episode_clks, episode_real_clks,
                                                    episode_profit, budget, episode_spent, episode_spent / episode_win_imps if episode_win_imps > 0 else 0, datetime.datetime.now()))
         print('\n---------测试---------\n')
-        test_clks = run_test(budget_para, original_ctr)
-        test_records_array.append(test_clks)
+        test_records, test_actions = run_test(budget_para, original_ctr)
+        test_records_array.append(test_records)
+        test_actions_array.append(test_actions)
 
         episode_result_data = [episode_imps, episode_win_imps, episode_clks, episode_real_clks,
                                episode_profit, budget, episode_spent, episode_spent / episode_win_imps if episode_win_imps > 0 else 0]
         result_data.append(episode_result_data)
+
         episode_action_records.append(action_records)
     columns = ['real_imps', 'win_imps', 'clks', 'real_clks', 'profit', 'budget', 'spent', 'CPM']
 
     test_records_array_df = pd.DataFrame(data=test_records_array)
-    test_records_array_df.to_csv('result/' + config['campaign_id'] + '/test_episode_clks_' + str(budget_para) + '.csv')
+    test_records_array_df.to_csv('result/' + config['campaign_id'] + '/test_episode_records_' + str(budget_para) + '.csv')
+
+    test_actions_array_df = pd.DataFrame(data=test_actions_array)
+    test_actions_array_df.to_csv(
+        'result/' + config['campaign_id'] + '/test_episode_actions_' + str(budget_para) + '.csv')
 
     action_df = pd.DataFrame(data=episode_action_records)
-    action_df.to_csv('result/' + config['campaign_id'] + '/train_action_' + str(budget_para) + '.csv')
-    lamda_record_df = pd.DataFrame(data=episode_lamda_records, columns=['init_lamda', 'optimal_lamda'])
-    lamda_record_df.to_csv('result/' + config['campaign_id'] + '/train_lamda_' + str(budget_para) + '.csv')
+    action_df.to_csv('result/' + config['campaign_id'] + '/train_episode_actions_' + str(budget_para) + '.csv')
+
     result_data_df = pd.DataFrame(data=result_data, columns=columns)
-    result_data_df.to_csv('result/' + config['campaign_id'] + '/train_' + str(budget_para) + '.csv')
+    result_data_df.to_csv('result/' + config['campaign_id'] + '/train_episode_results_' + str(budget_para) + '.csv')
 
     return optimal_lamda
 
@@ -376,22 +382,9 @@ def run_test(budget_para, original_ctr):
         episode_spent += t_spent
         episode_profit += reward_t
 
-    action_df = pd.DataFrame(data=action_records)
-    action_df.to_csv('result/' + config['campaign_id'] + '/test_action_' + str(budget_para) + '.csv')
-
-    lamda_record_df = pd.DataFrame(data=lamda_record)
-    lamda_record_df.to_csv('result/' + config['campaign_id'] + '/test_lamda_' + str(budget_para) + '.csv')
-
     print('测试集中：真实曝光数{}, 赢标数{}, 共获得{}个点击, 真实点击数{}, '
           '利润{}, 预算{}, 花费{}, CPM{}, {}'.format(episode_imps, episode_win_imps, episode_clks, episode_real_clks,
                                                episode_profit, budget, episode_spent, episode_spent / episode_win_imps, datetime.datetime.now()))
-    test_result_data = []
-    test_result_data.append([episode_imps, episode_win_imps, episode_clks, episode_real_clks,
-                             episode_profit, budget, episode_spent, episode_spent / episode_win_imps])
-
-    columns = ['real_imps', 'win_imps', 'clks', 'real_clks', 'profit', 'budget', 'spent', 'CPM']
-    test_result_data_df = pd.DataFrame(data=test_result_data, columns=columns)
-    test_result_data_df.to_csv('result/' + config['campaign_id'] + '/result_' + str(budget_para) + '.csv')
 
     temp_result = [episode_imps, episode_win_imps, episode_clks, episode_real_clks,
                              episode_profit, budget, episode_spent, episode_spent / episode_win_imps]
