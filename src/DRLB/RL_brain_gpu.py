@@ -76,7 +76,7 @@ class DRLB:
         self.learn_step_counter = 0
 
         # 将经验池<状态-动作-奖励-下一状态>中的转换组初始化为0
-        self.memory = np.zeros((self.memory_size, self.feature_numbers * 2 + 2))  # 状态的特征数*2加上动作和奖励
+        self.memory = np.zeros((self.memory_size, self.feature_numbers * 2 + 3))  # 状态的特征数*2加上动作和奖励
 
         # 创建target_net（目标神经网络），eval_net（训练神经网络）
         self.eval_net, self.target_net = Net(self.feature_numbers, self.action_numbers).cuda(), Net(
@@ -167,13 +167,16 @@ class DRLB:
         b_r = torch.FloatTensor(batch_memory[:, self.feature_numbers + 1]).cuda()
         b_s_ = torch.FloatTensor(batch_memory[:, -self.feature_numbers:]).cuda()
 
+        b_is_done = torch.FloatTensor(batch_memory[:, -1]).view(self.batch_size, 1).cuda()
+
         # q_eval w.r.t the action in experience
         # b_a - 1的原因是，出价动作最高300，而数组的最大index为299
         q_eval = self.eval_net.forward(b_s).gather(1, b_a)  # shape (batch,1), gather函数将对应action的Q值提取出来做Bellman公式迭代
         q_next = self.target_net.forward(b_s_).detach()  # detach from graph, don't backpropagate，因为target网络不需要训练
 
-        q_target = b_r.view(self.batch_size, 1) + self.gamma * q_next.max(1)[0].view(self.batch_size,
-                                                                                     1)
+        q_target = b_r.view(self.batch_size, 1) + self.gamma * np.multiply(q_next.max(1)[0].view(self.batch_size,
+                                                                                     1), np.subtract(1, b_is_done))
+
         # 训练eval_net
         loss = self.loss_func(q_eval, q_target)
 

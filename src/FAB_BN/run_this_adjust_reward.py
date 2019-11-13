@@ -456,7 +456,7 @@ if __name__ == '__main__':
         os.mkdir(data_type['campaign_id'] + 'result/')
     elif not os.path.exists(data_type['campaign_id'] + 'result_profit/'):
         os.mkdir(data_type['campaign_id'] + 'result_profit/')
-    elif not os.path.exists(data_type['campaign_id'] + 'result_adjust_reward/'):
+    else:
         os.mkdir(data_type['campaign_id'] + 'result_adjust_reward/')
 
     RL = DDPG(
