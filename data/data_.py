@@ -188,7 +188,7 @@ def to_RLB_data(campaign_id, type, train_data, test_data):
     rlb_train_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/train.theta.' + type + '.txt', index=None,
                              header=None)
     rlb_test_data_df = pd.DataFrame(data=rlb_test_data)
-    rlb_test_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/test.theta.' + type + 'txt', index=None, header=None)
+    rlb_test_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/test.theta.' + type + '.txt', index=None, header=None)
 
 
 if __name__ == '__main__':

@@ -250,7 +250,7 @@ class RLB_DP_I:
 
 		data={'actions':actions, 'prices':prices, 'clicks':clicks, 'hours': hours, 'thetas': thetas}
 		actions_df = pd.DataFrame(data=data)
-		actions_df.to_csv(config.logPath + '/bids.csv', index=None)
+		actions_df.to_csv(config.logPath + '/bids_' + str(budget_para) + '.csv', index=None)
 		return auction, imp, clk, cost, profit
 
 	@staticmethod
