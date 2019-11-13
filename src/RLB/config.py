@@ -9,12 +9,14 @@ projectPath = dataPath + "rlb-dp/"
 
 ipinyouPath = dataPath + "ipinyou-data/"
 
-ipinyou_camps = ["1458"]
+ipinyou_camps = ["3386"]
 
 logPath = 'result/' + ipinyou_camps[0]
 
 if not os.path.exists(logPath):
 	os.mkdir(logPath)
+elif not os.path.exists(ipinyouPath + ipinyou_camps[0] + '/bid-model/'):
+	os.mkdir(ipinyouPath + ipinyou_camps[0] + '/bid-model/')
 
 ipinyou_max_market_price = 300
 

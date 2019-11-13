@@ -83,7 +83,7 @@ class DRLB:
             self.feature_numbers, self.action_numbers)
 
         # 优化器
-        self.optimizer = torch.optim.RMSprop(self.eval_net.parameters(), lr=self.lr, alpha=0.95)
+        self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=self.lr)
         # 损失函数为，均方损失函数
         self.loss_func = nn.MSELoss()
 
@@ -108,19 +108,18 @@ class DRLB:
         torch.cuda.empty_cache()
         # 统一 state 的 shape, torch.unsqueeze()这个函数主要是对数据维度进行扩充
         state = torch.unsqueeze(torch.FloatTensor(state), 0)
-
         random_probability = max(self.epsilon, 0.5) # 论文的取法
 
         if np.random.uniform() < random_probability:
+            index = np.random.randint(0, self.action_numbers)
+            action = self.action_space[index]  # 随机选择动作
+        else:
             # 让 eval_net 神经网络生成所有 action 的值, 并选择值最大的 action
             actions_value = self.eval_net.forward(state)
             # torch.max(input, dim, keepdim=False, out=None) -> (Tensor, LongTensor),按维度dim 返回最大值
             # torch.max(a,1) 返回每一行中最大值的那个元素，且返回索引（返回最大元素在这一行的行索引）
             action_index = torch.max(actions_value, 1)[1].data.numpy()[0]
             action = self.action_space[action_index]  # 选择q_eval值最大的那个动作
-        else:
-            index = np.random.randint(0, self.action_numbers)
-            action = self.action_space[index]  # 随机选择动作
         return action
 
     # 选择最优动作
@@ -185,5 +184,5 @@ class DRLB:
 
     def control_epsilon(self, t):
         # 逐渐增加epsilon，增加行为的利用性
-        r_epsilon = 0.01  # 降低速率
+        r_epsilon = 1e-2  # 降低速率
         self.epsilon = max(0.95 - r_epsilon * t, 0.05)

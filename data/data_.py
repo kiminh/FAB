@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import random
 import os
+from src.data_type import config as data_type
 
 random.seed(1)
 
@@ -193,7 +194,7 @@ def to_RLB_data(campaign_id, type, train_data, test_data):
 
 if __name__ == '__main__':
     campaign_id = '1458'
-    type = 'sample' # down sample - sample; no sample - data
+    type = data_type['type'] # down sample - sample; no sample - data
 
     print('######Generate Train and Test Datas######\n')
     test_clks, test_auc_nums = generate_data(campaign_id)

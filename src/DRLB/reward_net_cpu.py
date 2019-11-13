@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -61,7 +62,7 @@ class RewardNet:
             self.memory_D2_counter = 0
 
         # 将经验池<状态-动作-累积奖励>中的转换组初始化为0
-        self.memory_S = np.zeros((self.memory_size, self.feature_numbers + 2))
+        self.memory_S = np.zeros((self.memory_size, self.feature_numbers + 1))
 
         # 将经验池<状态-动作-累积奖励中最大>中的转换组初始化为0
         self.memory_D2 = np.zeros((self.memory_size, self.feature_numbers + 2))
@@ -69,7 +70,7 @@ class RewardNet:
         self.model_reward, self.real_reward = Net(self.feature_numbers, self.reward_numbers), Net(self.feature_numbers, self.reward_numbers)
 
         # 优化器
-        self.optimizer = torch.optim.RMSprop(self.model_reward.parameters(), lr=self.lr, alpha=0.95)
+        self.optimizer = torch.optim.Adam(self.model_reward.parameters(), lr=self.lr)
         # 损失函数为，均方损失函数
         self.loss_func = nn.MSELoss()
 
@@ -77,25 +78,28 @@ class RewardNet:
         # 统一 observation 的 shape (1, size_of_observation)
         state = torch.unsqueeze(torch.FloatTensor(state), 0)
 
-        model_reward = self.model_reward.forward(state)
+        model_reward = self.model_reward.forward(state).detach().numpy()
         return model_reward
 
-    def store_state_action_pair(self, s, a, model_reward):
-        # 记录一条[s,a, m_r]记录
-        state_action_pair = np.hstack((s, a, model_reward))
+    def store_state_action_pair(self, s, a):
+        # 记录一条[s,a]记录
+        state_action_pair = np.hstack((s, a))
 
         # 由于已经定义了经验池的memory_size，如果超过此大小，旧的memory则被新的memory替换
         index = self.memory_S_counter % self.memory_size
         self.memory_S[index, :] = state_action_pair
+
         self.memory_S_counter += 1
 
-    def store_state_action_reward(self, direct_reward):
-        for i, memory_s in enumerate(self.memory_S):
-            rtn_m = max(self.memory_S[i, -1], direct_reward)
-            state_action_rtn = np.hstack((self.memory_S[i, :self.feature_numbers+1], rtn_m))
-            index = self.memory_D2_counter % self.memory_size
-            self.memory_D2[index, :] = state_action_rtn
-            self.memory_D2_counter += 1
+    def reset_D2(self, V):
+        iter_lens = min(self.memory_S_counter, len(self.memory_S))
+        current_memory_D2_counter = 0
+        for i in range(iter_lens):
+            rtn_m = max(self.memory_D2[i, -1], V)
+            state_action_rtn = np.hstack((self.memory_S[i, :self.feature_numbers + 1], rtn_m))
+            self.memory_D2[i, :] = state_action_rtn # 这里依据memory_S的state和action数据，相当于已经应用了LRFU策略
+            current_memory_D2_counter += 1
+        self.memory_D2_counter = current_memory_D2_counter
 
     def learn(self):
         if self.memory_D2_counter > self.memory_size:

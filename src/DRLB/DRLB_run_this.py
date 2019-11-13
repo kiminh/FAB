@@ -14,30 +14,6 @@ else:
 def bid_func(auc_pCTRS, lamda):
     return auc_pCTRS/ lamda
 
-def run_reward_net(train_data, state_array):
-    cpc = 30000
-    V = 0 # 直接奖励值
-
-    for t in range(len(state_array)):
-        state_t = state_array[t][0:7]
-        action_t = state_array[t][7]
-        m_reward_t = state_array[t][8]
-        bid_arrays = state_array[t][9:]
-
-        auc_t_datas = train_data[train_data.iloc[:, 3].isin([t + 1])]  # t时段的数据
-
-
-        win_auc_datas = auc_t_datas[auc_t_datas.iloc[:, 2] <= bid_arrays]  # 赢标的数据
-        direct_reward_t = np.sum(win_auc_datas.iloc[:, 1].values * cpc - win_auc_datas.iloc[:, 2].values)
-        V += direct_reward_t
-
-        RewardNet.store_state_action_pair(state_t, action_t, m_reward_t)
-
-        RewardNet.store_state_action_reward(V)
-
-        if len(RewardNet.memory_D2) >= config['batch_size'] and len(RewardNet.memory_D2) % config['batch_size'] == 0:
-            RewardNet.learn()
-
 def statistics(B_t, origin_t_spent, origin_t_win_imps,
                origin_t_auctions, origin_t_clks, origin_reward_t, origin_profit_t,  auc_t_datas, bid_arrays, remain_auc_num, t):
     cpc = 30000
@@ -94,6 +70,7 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
     t_clks = np.sum(win_auc_datas[:, 0])
     profit_t = np.sum(win_auc_datas[:, 1] * cpc - win_auc_datas[:, 2])  # RewardNet
     reward_t = np.sum(np.multiply(win_auc_datas[:, 0], win_auc_datas[:, 1])) # 按论文中的奖励设置，作为直接奖励
+    origin_reward_t = reward_t
 
     # BCR_t = 0
     if time_t == 0:
@@ -138,6 +115,7 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
 
         B_t[time_t] = B_t[time_t - 1] - t_spent
         if B_t[time_t] < 0:
+            RL.reset_epsilon(0.05)
             B_t[time_t] = 0
         remain_auc_num[time_t] = remain_auc_num[time_t - 1] - t_auctions
         if remain_auc_num[time_t] < 0:
@@ -157,7 +135,8 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
     t_real_clks = np.sum(auc_t_datas.iloc[:, 0])
 
     t_real_imps = len(auc_t_datas)
-    return state_t, lamda, B_t, reward_t, profit_t, t_clks, bid_arrays, remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent
+
+    return state_t, lamda, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent
 
 def choose_init_lamda(campaign, original_ctr):
     results_train_best = open('../heuristic_algo/result/' + campaign + '/results_train.best.perf.txt', 'r')
@@ -209,7 +188,6 @@ def run_env(budget_para):
 
         RL.reset_epsilon(0.9) # init epsilon value
 
-        reward_net_data = []
         episode_clks = 0
         episode_real_clks = 0
         episode_imps = 0
@@ -219,6 +197,8 @@ def run_env(budget_para):
 
         action_records = []
         temp_lamda_record = [init_lamda]
+
+        V = 0 # current episode's cumulative directive reward
         for t in range(96):
             time_t = t
             ROL_t = 96-t-1
@@ -226,8 +206,11 @@ def run_env(budget_para):
             auc_t_datas = train_data[train_data.iloc[:, 3].isin([t + 1])] # t时段的数据
             auc_t_data_pctrs = auc_t_datas.iloc[:, 1].values # ctrs
 
+            if RewardNet.memory_D2_counter >= config['batch_size']:
+                RewardNet.learn()
+
             if t == 0:
-                state_t, lamda_t, B_t, reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent\
+                state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent\
                     = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                                                                              init_lamda, B_t, time_t, remain_auc_num)  # 1时段
                 action = RL.choose_action(state_t)
@@ -236,14 +219,14 @@ def run_env(budget_para):
 
                 lamda_t_next = lamda_t * (1 + action)
 
-                state_t_next, lamda_t_next, B_t_next, reward_t_next, profit_t_next, t_clks_next, bid_arrays_next, remain_auc_num_next, \
+                state_t_next, lamda_t_next, B_t_next, reward_t_next, origin_reward_t_next, profit_t_next, t_clks_next, bid_arrays_next, remain_auc_num_next, \
                 t_win_imps_next, t_real_imps_next, t_real_clks_next, t_spent_next \
                     = state_(budget,auc_num, auc_t_datas_next,auc_t_data_pctrs_next,lamda_t_next,B_t,time_t + 1, t_remain_auc_num)
 
                 temp_state_t_next, temp_lamda_t_next, temp_B_t_next, temp_reward_t_next, temp_remain_t_auctions\
                     = state_t_next, lamda_t_next, B_t_next, reward_t_next, remain_auc_num_next
             else:
-                state_t, lamda_t, B_t, reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent\
+                state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent\
                     = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,temp_lamda_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
 
                 action = RL.choose_action(state_t)
@@ -252,8 +235,11 @@ def run_env(budget_para):
                 auc_t_data_pctrs_next = auc_t_datas_next.iloc[:, 1].values  # ctrs
 
                 lamda_t_next = lamda_t * (1 + action)
+
+                if t + 1 == 95:
+                    RL.reset_epsilon(0.05)
                 if t < 95:
-                    state_t_next, lamda_t_next, B_t_next, reward_t_next, profit_t_next, t_clks_next, bid_arrays_next, remain_auc_num_next, \
+                    state_t_next, lamda_t_next, B_t_next, reward_t_next, origin_reward_t_next, profit_t_next, t_clks_next, bid_arrays_next, remain_auc_num_next, \
                     t_win_imps_next, t_real_imps_next, t_real_clks_next, t_spent_next\
                         = state_(budget, auc_num,auc_t_datas_next,auc_t_data_pctrs_next,lamda_t_next,B_t,time_t + 1, t_remain_auc_num)
 
@@ -266,7 +252,9 @@ def run_env(budget_para):
                     = state_t_next, lamda_t_next, B_t_next, reward_t_next, profit_t_next, remain_auc_num_next
 
             transition = np.hstack((state_t, action, reward_t, state_t_next))
-            RL.store_transition(transition)
+            RL.store_transition(transition) # 存储在DRLB的经验池中
+            RewardNet.store_state_action_pair(state_t, action) # 存储在Reward_net中
+
             action_records.append(action)
             RL.up_learn_step()
             RL.control_epsilon(t + 1)
@@ -278,11 +266,12 @@ def run_env(budget_para):
             episode_real_clks += t_real_clks
             episode_profit += profit_t
 
-            state_t_action_win_index = np.hstack((state_t, action, reward_t, bid_arrays)).tolist()
-            reward_net_data.append(state_t_action_win_index)
-            if t >= config['batch_size'] - 1 and (t + 1) % 32 == 0: # 控制更新速度
-                run_reward_net(train_data, reward_net_data) # 更新算法2 8-10行
+            V += origin_reward_t
+
+            if RL.memory_counter >= config['batch_size']: # 控制更新速度
                 RL.learn()
+
+        RewardNet.reset_D2(V)
 
         print('第{}轮，真实曝光数{}, 赢标数{}, 共获得{}个点击, 真实点击数{}, '
               '利润{}, 预算{}, 花费{}, CPM{}, {}'.format(episode + 1, episode_imps, episode_win_imps, episode_clks, episode_real_clks,
@@ -315,7 +304,7 @@ def run_env(budget_para):
     return optimal_lamda
 
 def run_test(budget_para, original_ctr):
-    test_data = pd.read_csv('data/' + config['campaign_id'] + '/test_DRLB' + data_type['type'] + '.csv', header=None).drop([0])
+    test_data = pd.read_csv('data/' + config['campaign_id'] + '/test_DRLB_' + data_type['type'] + '.csv', header=None).drop([0])
     test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
     test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
 
@@ -351,7 +340,7 @@ def run_test(budget_para, original_ctr):
         auc_t_datas = test_data[test_data.iloc[:, 3].isin([t + 1])]  # t时段的数据
         auc_t_data_pctrs = auc_t_datas.iloc[:, 1].values  # ctrs
         if t == 0:
-            state_t, lamda_t, B_t, reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent\
+            state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent\
                 = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                                                                          init_lamda, B_t, time_t, remain_auc_num)  # 1时段
             action = RL.choose_best_action(state_t)
@@ -360,7 +349,7 @@ def run_test(budget_para, original_ctr):
 
             temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
         else:
-            state_t, lamda_t, B_t, reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent\
+            state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent\
                 = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                                                                          temp_lamda_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
             action = RL.choose_best_action(state_t)
