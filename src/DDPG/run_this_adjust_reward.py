@@ -452,12 +452,12 @@ def test_env(budget, budget_para, test_data, eCPC):
 if __name__ == '__main__':
     if not os.path.exists(data_type['campaign_id']):
         os.mkdir(data_type['campaign_id'])
-    elif not os.path.exists(data_type['campaign_id'] + '/result'):
-        os.mkdir(data_type['campaign_id'] + '/result')
-    elif not os.path.exists(data_type['campaign_id'] + '/result_profit'):
-        os.mkdir(data_type['campaign_id'] + '/result_profit')
-    elif not os.path.exists(data_type['campaign_id'] + '/result_adjust_reward'):
-        os.mkdir(data_type['campaign_id'] + '/result_adjust_reward')
+    elif not os.path.exists(data_type['campaign_id'] + 'result'):
+        os.mkdir(data_type['campaign_id'] + 'result')
+    elif not os.path.exists(data_type['campaign_id'] + 'result_profit'):
+        os.mkdir(data_type['campaign_id'] + 'result_profit')
+    elif not os.path.exists(data_type['campaign_id'] + 'result_adjust_reward'):
+        os.mkdir(data_type['campaign_id'] + 'result_adjust_reward')
 
     RL = DDPG(
         feature_nums=config['feature_num'],
