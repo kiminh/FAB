@@ -2,6 +2,7 @@ import _pickle as pickle
 import numpy as np
 import pandas as pd
 import os
+from src.data_type import config as data_type
 
 dataPath = "data/"
 projectPath = dataPath + "rlb-dp/"
@@ -31,8 +32,8 @@ def get_camp_info(camp, src="ipinyou"):
 	if src == "ipinyou":
 		info = pickle.load(open(ipinyouPath + camp + "/info.txt", "rb"))
 
-		train_data = pd.read_csv(ipinyouPath + camp + "/train.theta.txt", header=None)
-		test_data = pd.read_csv(ipinyouPath + camp + "/test.theta.txt", header=None)
+		train_data = pd.read_csv(ipinyouPath + camp + "/train.theta." + data_type['type'] + ".txt", header=None)
+		test_data = pd.read_csv(ipinyouPath + camp + "/test.theta." + data_type['type'] + ".txt", header=None)
 		train_data.iloc[:, :] = train_data.iloc[:, :].astype(float)
 		test_data.iloc[:, :] = test_data.iloc[:, :].astype(float)
 
