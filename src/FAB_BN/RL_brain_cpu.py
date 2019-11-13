@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import os
 import random
-from src.DDPG.Actor_Critic import Actor, Critic
+from src.FAB_BN.Actor_Critic import Actor, Critic
 
 def setup_seed(seed):
     torch.manual_seed(seed)

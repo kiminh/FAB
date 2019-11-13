@@ -2,12 +2,12 @@ import pandas as pd
 import numpy as np
 import datetime
 import os
-from src.DDPG_BN.config import config
+from src.FAB_BN.config import config
 from src.data_type import config as data_type
 if data_type['is_gpu'] == 0:
-    from src.DDPG_BN.RL_brain_cpu import DDPG, OrnsteinUhlenbeckNoise
+    from src.FAB_BN.RL_brain_cpu import DDPG, OrnsteinUhlenbeckNoise
 else:
-    from src.DDPG_BN.RL_brain_gpu import DDPG, OrnsteinUhlenbeckNoise
+    from src.FAB_BN.RL_brain_gpu import DDPG, OrnsteinUhlenbeckNoise
 
 # 由启发式算法得到的eCPC
 def choose_eCPC(campaign, original_ctr):
@@ -30,33 +30,20 @@ def choose_eCPC(campaign, original_ctr):
 
     return eCPC
 
-# 奖励函数type1
-def adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
-                  e_lose_imp_with_clk_value,
-                  e_clk_aucs,
-                  e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, budget, total_clks, t):
+# 奖励函数type2
+def adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_lose_imp_with_clk_value, e_clk_aucs, e_clk_no_win_aucs, t):
     reward_degree = 1 - np.square(np.mean(np.true_divide(np.subtract(bids_t, market_prices_t), bids_t)))
     reward_win_imp_with_clk = (e_win_imp_with_clk_value[t] / e_true_value[t]) * reward_degree
     reward_win_imp_with_clk = reward_win_imp_with_clk if reward_degree > 0 else 0
 
-    remain_budget = (budget - np.sum(e_cost[:t+1])) / budget
-    remain_budget = remain_budget if remain_budget > 0 else 1e-1 # 1e-1防止出现除0错误
-    remain_clks = (total_clks - np.sum(real_clks[:t+1])) / total_clks
-    punish_win_rate = remain_clks / remain_budget
-    reward_win_imp_without_clk = - e_win_imp_without_clk_cost[t] * punish_win_rate / e_cost[t]
     temp_rate = (e_clk_no_win_aucs[t] / e_clk_aucs[t]) if e_clk_aucs[t] > 0 else 1
     punish_no_win_rate = 1 - temp_rate if temp_rate != 1 else 1
     base_punishment = e_lose_imp_with_clk_value[t] / e_miss_true_value[t] if e_miss_true_value[t] > 0 else 0
     reward_lose_imp_with_clk = - base_punishment / punish_no_win_rate
 
-    base_encourage = e_lose_imp_without_clk_cost[t] / np.sum(market_prices_t)
-    encourage_rate = 1 - (e_no_clk_no_win_aucs[t] / e_no_clk_aucs[t])
-    reward_lose_imp_without_clk = base_encourage / encourage_rate if encourage_rate > 0 else 1
-    reward_t = reward_win_imp_with_clk + reward_lose_imp_with_clk + reward_win_imp_without_clk + reward_lose_imp_without_clk
+    reward_t = reward_win_imp_with_clk + reward_lose_imp_with_clk
 
-    n = 1e5 # 奖励函数type1的缩放因子
-
-    return reward_t / n
+    return reward_t
 
 def run_env(budget_para):
     # 训练
@@ -85,7 +72,6 @@ def run_env(budget_para):
     config['test_budget'] = np.sum(test_data[:, config['data_marketprice_index']])
 
     original_ctr = np.sum(train_data[:, 1]) / len(train_data)
-    total_clks = np.sum(train_data[:, config['data_clk_index']])
     real_hour_clks = []
     for i in range(24):
         real_hour_clks.append(
@@ -149,7 +135,6 @@ def run_env(budget_para):
 
             actions[t] = action
 
-            # print(bids, action)
             win_auctions = auc_datas[bids >= auc_datas[:, config['data_marketprice_index']]]
             no_win_auctions = auc_datas[bids <= auc_datas[:, config['data_marketprice_index']]]
             e_cost[t] = np.sum(win_auctions[:, config['data_marketprice_index']])
@@ -180,7 +165,6 @@ def run_env(budget_para):
             bids_t = bids
             market_prices_t = auc_datas[:, config['data_marketprice_index']]
             if np.sum(e_cost) >= budget:
-                # print('早停时段{}'.format(t))
                 break_time_slot = t
                 temp_cost = 0
                 temp_lose_cost = 0
@@ -266,10 +250,7 @@ def run_env(budget_para):
             action_ = np.clip(action_ + ou_noise()[0] * exploration_rate, -0.99, 0.99)
             next_action = action_
 
-            reward_t = adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
-                  e_lose_imp_with_clk_value,
-                  e_clk_aucs,
-                  e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, budget, total_clks, t)
+            reward_t = adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_lose_imp_with_clk_value, e_clk_aucs, e_clk_no_win_aucs, t)
             reward = reward_t
             e_reward[t] = reward
             transition = np.hstack((state.tolist(), action, reward, state_.tolist()))
@@ -298,12 +279,12 @@ def run_env(budget_para):
 
         if (episode > 0) and ((episode + 1) % 10 == 0):
             actions_df = pd.DataFrame(data=actions)
-            actions_df.to_csv(data_type['campaign_id'] + '/result_adjust_reward/train_actions_' + str(budget_para) + '.csv')
+            actions_df.to_csv(data_type['campaign_id'] + '/result_profit/train_actions_' + str(budget_para) + '.csv')
 
             hour_clks = {'clks': e_clks, 'no_bid_clks': np.subtract(real_hour_clks, e_clks).tolist(),
                          'real_clks': real_hour_clks}
             hour_clks_df = pd.DataFrame(data=hour_clks)
-            hour_clks_df.to_csv(data_type['campaign_id'] + '/result_adjust_reward/train_hour_clks_' + str(budget_para) + '.csv')
+            hour_clks_df.to_csv(data_type['campaign_id'] + '/result_profit/train_hour_clks_' + str(budget_para) + '.csv')
             print(
                 'episode {}, reward={}, profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, td_error={}, action_loss={}\n'.format(
                     episode + 1, np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
@@ -315,15 +296,15 @@ def run_env(budget_para):
 
     e_results_df = pd.DataFrame(data=e_results, columns=['reward', 'profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                                          'break_time_slot', 'td_error', 'action_loss'])
-    e_results_df.to_csv(data_type['campaign_id'] + '/result_adjust_reward/train_episode_results_' + str(budget_para) + '.csv')
+    e_results_df.to_csv(data_type['campaign_id'] + '/result_profit/train_episode_results_' + str(budget_para) + '.csv')
 
     e_actions_df = pd.DataFrame(data=e_actions)
-    e_actions_df.to_csv(data_type['campaign_id'] + '/result_adjust_reward/test_episode_actions_' + str(budget_para) + '.csv')
+    e_actions_df.to_csv(data_type['campaign_id'] + '/result_profit/test_episode_actions_' + str(budget_para) + '.csv')
 
     test_records_df = pd.DataFrame(data=test_records,
                                    columns=['profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                             'break_time_slot'])
-    test_records_df.to_csv(data_type['campaign_id'] + '/result_adjust_reward/test_episode_results_' + str(budget_para) + '.csv')
+    test_records_df.to_csv(data_type['campaign_id'] + '/result_profit/test_episode_results_' + str(budget_para) + '.csv')
 
 
 def test_env(budget, budget_para, test_data, eCPC):
@@ -434,13 +415,13 @@ def test_env(budget, budget_para, test_data, eCPC):
     result_df = pd.DataFrame(data=results,
                              columns=['profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                       'break_time_slot'])
-    result_df.to_csv(data_type['campaign_id'] + '/result_adjust_reward/test_result_' + str(budget_para) + '.csv')
+    result_df.to_csv(data_type['campaign_id'] + '/result_profit/test_result_' + str(budget_para) + '.csv')
 
     test_actions_df = pd.DataFrame(data=actions)
-    test_actions_df.to_csv(data_type['campaign_id'] + '/result_adjust_reward/test_action_' + str(budget_para) + '.csv')
+    test_actions_df.to_csv(data_type['campaign_id'] + '/result_profit/test_action_' + str(budget_para) + '.csv')
 
     test_hour_clks_df = pd.DataFrame(data=hour_clks)
-    test_hour_clks_df.to_csv(data_type['campaign_id'] + '/result_adjust_reward/test_hour_clks_' + str(budget_para) + '.csv')
+    test_hour_clks_df.to_csv(data_type['campaign_id'] + '/result_profit/test_hour_clks_' + str(budget_para) + '.csv')
     print('profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, {}\n'.format(
         np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
         int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
