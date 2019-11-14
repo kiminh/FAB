@@ -105,13 +105,13 @@ if __name__ == '__main__':
     result_path = 'result'
     if not os.path.exists(result_path):
         os.mkdir(result_path)
-    elif not os.path.exists(result_path + '/' + campaign):
-        os.mkdir(result_path + '/' + campaign)
+    elif not os.path.exists(result_path + '/' + campaign + data_type['type'] + '/'):
+        os.mkdir(result_path + '/' + campaign + data_type['type'] + '/')
 
     to_train_results(campaign)  # 生成训练结果
 
-    fi = open('result/' + campaign + '/results_train.txt', 'r') # rtb.result.1458.txt
-    fo = open('result/' + campaign + '/results_train.txt'.replace('.txt', '.best.perf.txt'), 'w')
+    fi = open('result/' + campaign + data_type['type'] +  '/results_train.txt', 'r') # rtb.result.1458.txt
+    fo = open('result/' + campaign + data_type['type'] + '/results_train.txt'.replace('.txt', '.best.perf.txt'), 'w')
     first = True
 
     setting_row = {}

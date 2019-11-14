@@ -3,7 +3,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import random
+import os
 from src.FAB_BN.config import config
+from src.data_type import config as data_type
+
+log_path = data_type['campaign_id'] + data_type['type']
+if not os.path.exists(data_type['campaign_id']):
+    os.mkdir(data_type['campaign_id'])
+elif not os.path.exists(log_path + '/result/'):
+    os.mkdir(log_path + '/result/')
+elif not os.path.exists(log_path + '/result_profit/'):
+    os.mkdir(log_path + '/result_profit/')
+elif not os.path.exists(log_path + '/result_adjust_reward/'):
+    os.mkdir(log_path + '/result_adjust_reward/')
 
 def setup_seed(seed):
     torch.manual_seed(seed)

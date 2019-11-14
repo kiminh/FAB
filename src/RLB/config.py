@@ -11,7 +11,7 @@ ipinyouPath = dataPath + "ipinyou-data/"
 
 ipinyou_camps = ["3386"]
 
-logPath = 'result/' + ipinyou_camps[0]
+logPath = 'result/' + ipinyou_camps[0] + '/' + data_type['type'] + '/'
 
 if not os.path.exists(logPath):
 	os.mkdir(logPath)

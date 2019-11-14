@@ -176,7 +176,7 @@ def run_env(budget_para):
     result_data = []
     episode_lamda_records = []
     episode_action_records = []
-    init_lamda = choose_init_lamda(config['campaign_id'], original_ctr)
+    init_lamda = choose_init_lamda(data_type['campaign_id'], original_ctr)
     optimal_lamda = 0
     test_records_array = []
     test_actions_array = []
@@ -295,22 +295,22 @@ def run_env(budget_para):
     columns = ['real_imps', 'win_imps', 'clks', 'real_clks', 'profit', 'budget', 'spent', 'CPM']
 
     test_records_array_df = pd.DataFrame(data=test_records_array)
-    test_records_array_df.to_csv('result/' + config['campaign_id'] + '/test_episode_records_' + str(budget_para) + '.csv')
+    test_records_array_df.to_csv('result/' + data_type['campaign_id'] + data_type['type'] + '/test_episode_records_' + str(budget_para) + '.csv')
 
     test_actions_array_df = pd.DataFrame(data=test_actions_array)
     test_actions_array_df.to_csv(
-        'result/' + config['campaign_id'] + '/test_episode_actions_' + str(budget_para) + '.csv')
+        'result/' + data_type['campaign_id'] + data_type['type'] + '/test_episode_actions_' + str(budget_para) + '.csv')
 
     action_df = pd.DataFrame(data=episode_action_records)
-    action_df.to_csv('result/' + config['campaign_id'] + '/train_episode_actions_' + str(budget_para) + '.csv')
+    action_df.to_csv('result/' + data_type['campaign_id'] + data_type['type'] + '/train_episode_actions_' + str(budget_para) + '.csv')
 
     result_data_df = pd.DataFrame(data=result_data, columns=columns)
-    result_data_df.to_csv('result/' + config['campaign_id'] + '/train_episode_results_' + str(budget_para) + '.csv')
+    result_data_df.to_csv('result/' + data_type['campaign_id'] + data_type['type'] + '/train_episode_results_' + str(budget_para) + '.csv')
 
     return optimal_lamda
 
 def run_test(budget_para, original_ctr):
-    test_data = pd.read_csv('data/' + config['campaign_id'] + '/test_DRLB_' + data_type['type'] + '.csv', header=None).drop([0])
+    test_data = pd.read_csv('data/' + data_type['campaign_id'] + '/test_DRLB_' + data_type['type'] + '.csv', header=None).drop([0])
     test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
     test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
 
@@ -326,7 +326,7 @@ def run_test(budget_para, original_ctr):
     remain_auc_num = [0 for i in range(96)]
     remain_auc_num[0] = auc_num
 
-    init_lamda = choose_init_lamda(config['campaign_id'], original_ctr)
+    init_lamda = choose_init_lamda(data_type['campaign_id'], original_ctr)
     episode_clks = 0
     episode_real_clks = 0
     episode_imps = 0

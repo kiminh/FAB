@@ -11,7 +11,7 @@ else:
 
 # 由启发式算法得到的eCPC
 def choose_eCPC(campaign, original_ctr):
-    results_train_best = open('../heuristic_algo/result/' + campaign + '/results_train.best.perf.txt', 'r')
+    results_train_best = open('../heuristic_algo/result/' + campaign + data_type['type'] + '/results_train.best.perf.txt', 'r')
     train_best_bid = {}
     for i, line in enumerate(results_train_best):
         if i == 0:
@@ -450,15 +450,6 @@ def test_env(budget, budget_para, test_data, eCPC):
 
 
 if __name__ == '__main__':
-    if not os.path.exists(data_type['campaign_id']):
-        os.mkdir(data_type['campaign_id'])
-    elif not os.path.exists(data_type['campaign_id'] + 'result/'):
-        os.mkdir(data_type['campaign_id'] + 'result/')
-    elif not os.path.exists(data_type['campaign_id'] + 'result_profit/'):
-        os.mkdir(data_type['campaign_id'] + 'result_profit/')
-    elif not os.path.exists(data_type['campaign_id'] + 'result_adjust_reward/'):
-        os.mkdir(data_type['campaign_id'] + 'result_adjust_reward/')
-
     RL = DDPG(
         feature_nums=config['feature_num'],
         action_nums=1,
