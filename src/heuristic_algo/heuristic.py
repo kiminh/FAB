@@ -57,7 +57,7 @@ def simulate_one_bidding_strategy(original_ctr, cases, ctrs, tcost, proportion, 
         print(res)
         writer.write(res + '\n')
 
-def to_train_results(campaign):
+def to_train_results(campaign, type):
     if not os.path.exists('result'):
         os.mkdir('result')
 
@@ -91,7 +91,7 @@ def to_train_results(campaign):
 
     algo_paras = {"lin": lin_paras}
 
-    fo = open('result/' + campaign + '/results_train.txt', 'w') # rtb.results.txt
+    fo = open('result/' + campaign + type + '/results_train.txt', 'w') # rtb.results.txt
     header = "prop\tprofits\tclks\treal_clks\tbids\timps\treal_imps\tbudget\tspend\tcpm\talgo\tpara"
     fo.write(header + '\n')
     print(header)
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     elif not os.path.exists(result_path + '/' + campaign + data_type['type'] + '/'):
         os.mkdir(result_path + '/' + campaign + data_type['type'] + '/')
 
-    to_train_results(campaign)  # 生成训练结果
+    to_train_results(campaign, data_type['type'])  # 生成训练结果
 
     fi = open('result/' + campaign + data_type['type'] +  '/results_train.txt', 'r') # rtb.result.1458.txt
     fo = open('result/' + campaign + data_type['type'] + '/results_train.txt'.replace('.txt', '.best.perf.txt'), 'w')
