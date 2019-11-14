@@ -402,5 +402,3 @@ if __name__ == '__main__':
     for i in range(len(budget_para)):
         print('-----当前预算条件{}----\n'.format(budget_para[i]))
         optimal_lamda = run_env(budget_para[i])
-        print('\n--------------final test--------------\n')
-        run_test(optimal_lamda, budget_para[i])
