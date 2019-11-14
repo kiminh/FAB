@@ -10,13 +10,17 @@ from src.data_type import config as data_type
 log_path = data_type['campaign_id'] + data_type['type']
 if not os.path.exists(data_type['campaign_id']):
     os.mkdir(data_type['campaign_id'])
-elif not os.path.exists(log_path):
+
+if not os.path.exists(log_path):
     os.mkdir(log_path)
-elif not os.path.exists(log_path + '/result/'):
+
+if not os.path.exists(log_path + '/result/'):
     os.mkdir(log_path + '/result/')
-elif not os.path.exists(log_path + '/result_profit/'):
+
+if not os.path.exists(log_path + '/result_profit/'):
     os.mkdir(log_path + '/result_profit/')
-elif not os.path.exists(log_path + '/result_adjust_reward/'):
+
+if not os.path.exists(log_path + '/result_adjust_reward/'):
     os.mkdir(log_path + '/result_adjust_reward/')
 
 def setup_seed(seed):

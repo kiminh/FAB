@@ -9,9 +9,9 @@ projectPath = dataPath + "rlb-dp/"
 
 ipinyouPath = dataPath + "ipinyou-data/"
 
-ipinyou_camps = ["3386"]
+ipinyou_camps = [data_type['campaign_id'].split('/')[0]]
 
-logPath = 'result/' + ipinyou_camps[0] + '/' + data_type['type'] + '/'
+logPath = 'result/' + ipinyou_camps[0] + '/' + data_type['type']
 
 if not os.path.exists(logPath):
 	os.mkdir(logPath)

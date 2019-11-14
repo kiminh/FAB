@@ -63,6 +63,7 @@ def statistics(B_t, origin_t_spent, origin_t_win_imps,
 def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, remain_auc_num):
     cpc = 30000
     bid_arrays = bid_func(auc_t_data_pctrs, lamda)  # 出价
+    bid_arrays = np.where(bid_arrays >= 300, 300, bid_arrays)
     win_auc_datas = auc_t_datas[auc_t_datas.iloc[:, 2] <= bid_arrays].values  # 赢标的数据
     t_spent = np.sum(win_auc_datas[:, 2])  # 当前t时段花费
     t_auctions = len(auc_t_datas)  # 当前t时段参与拍卖次数
@@ -142,7 +143,7 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
     return state_t, lamda, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done
 
 def choose_init_lamda(campaign, original_ctr):
-    results_train_best = open('../heuristic_algo/result/' + campaign + '/results_train.best.perf.txt', 'r')
+    results_train_best = open('../heuristic_algo/result/' + campaign + data_type['type'] + '/results_train.best.perf.txt', 'r')
     train_best_bid = {}
     for i, line in enumerate(results_train_best):
         if i == 0:
@@ -295,7 +296,7 @@ def run_env(budget_para):
     columns = ['real_imps', 'win_imps', 'clks', 'real_clks', 'profit', 'budget', 'spent', 'CPM']
 
     test_records_array_df = pd.DataFrame(data=test_records_array)
-    test_records_array_df.to_csv('result/' + data_type['campaign_id'] + data_type['type'] + '/test_episode_records_' + str(budget_para) + '.csv')
+    test_records_array_df.to_csv('result/' + data_type['campaign_id'] + data_type['type'] + '/test_episode_results_' + str(budget_para) + '.csv')
 
     test_actions_array_df = pd.DataFrame(data=test_actions_array)
     test_actions_array_df.to_csv(
@@ -381,6 +382,7 @@ def run_test(budget_para, original_ctr):
 
     temp_result = [episode_imps, episode_win_imps, episode_clks, episode_real_clks,
                              episode_profit, budget, episode_spent, episode_spent / episode_win_imps]
+    print(temp_result)
     return temp_result, action_records
 
 if __name__ == '__main__':

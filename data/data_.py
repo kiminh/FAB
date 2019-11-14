@@ -193,7 +193,7 @@ def to_RLB_data(campaign_id, type, train_data, test_data):
 
 
 if __name__ == '__main__':
-    campaign_id = '1458'
+    campaign_id = '3386'
     type = data_type['type'] # down sample - sample; no sample - data
 
     print('######Generate Train and Test Datas######\n')

@@ -67,21 +67,22 @@ def simulate_one_bidding_strategy_with_parameter(bidding_opt_c, cases, ctrs, tco
         str(imps) + '\t' + str(real_imps) + '\t' + str(budget) + '\t' + str(cost) + '\t' + str(cpm) + '\t'+ algo + '\t' + str(para)\
         , no_win_hour_clks, win_hour_clks, hour_clks
 
-def simulate_one_bidding_strategy(bidding_opt_c, cases, ctrs, tcost, proportion, algo, writer, campaign):
+def simulate_one_bidding_strategy(bidding_opt_c, cases, ctrs, tcost, proportion, algo, writer, campaign, type):
     paras = algo_paras[algo]
     for para in paras:
         res, no_win_hour_clks, win_hour_clks, hour_clks = simulate_one_bidding_strategy_with_parameter(bidding_opt_c, cases, ctrs, tcost, proportion, algo, para)
         print(res)
         hour_clks_data = {'win_hour_clks' : win_hour_clks, 'no_win_hour_clks' : no_win_hour_clks, 'hour_clks' : hour_clks}
         hour_clks_data_df = pd.DataFrame(data=hour_clks_data)
-        hour_clks_data_df.to_csv('result/' + campaign + '/test_hour_clks_' + str(proportion) + '.csv')
+        hour_clks_data_df.to_csv('result/' + campaign + type + '/test_hour_clks_' + str(proportion) + '.csv')
         writer.write(res + '\n')
 
 if __name__ == '__main__':
     if not os.path.exists('result'):
         os.mkdir('result')
-    elif not os.path.exists('result/' + data_type['campaign_id']):
-        os.mkdir('result/' + data_type['campaign_id'])
+
+    if not os.path.exists('result/' + data_type['campaign_id'] + data_type['type']):
+        os.mkdir('result/' + data_type['campaign_id'] + data_type['type'])
 
     # 从训练数据中读取到初始ecpc和初始ctr
     train_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/train_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
@@ -124,12 +125,12 @@ if __name__ == '__main__':
     # parameters setting for each bidding strategy
     budget_proportions = [2, 4, 8, 16]
 
-    fo = open('result/' + data_type['campaign_id'] + 'results_test.txt', 'w') # rtb.results.txt
+    fo = open('result/' + data_type['campaign_id'] + data_type['type'] + '/results_test.txt', 'w') # rtb.results.txt
     header = "prop\tprofits\tclks\treal_clks\tbids\timps\treal_imps\tbudget\tspend\tcpm\talgo\tpara"
     fo.write(header + '\n')
     print(header)
     for k, proportion in enumerate(budget_proportions):
         algo_paras = {"lin": [0], "bidding_opt": [0]}
         for algo in algo_paras:
-            simulate_one_bidding_strategy(bidding_opt_c, clicks_prices, pctrs, total_cost, proportion, algo, fo, data_type['campaign_id'])
+            simulate_one_bidding_strategy(bidding_opt_c, clicks_prices, pctrs, total_cost, proportion, algo, fo, data_type['campaign_id'], data_type['type'])
 

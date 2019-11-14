@@ -1,17 +1,19 @@
 import pandas as pd
 import numpy as np
 import datetime
-import os
 from src.FAB_NO_BN.config import config
 from src.data_type import config as data_type
+
 if data_type['is_gpu'] == 0:
     from src.FAB_NO_BN.RL_brain_cpu import DDPG, OrnsteinUhlenbeckNoise
 else:
     from src.FAB_NO_BN.RL_brain_gpu import DDPG, OrnsteinUhlenbeckNoise
 
+
 # 由启发式算法得到的eCPC
 def choose_eCPC(campaign, original_ctr):
-    results_train_best = open('../heuristic_algo/result/' + campaign + data_type['type'] + '/results_train.best.perf.txt', 'r')
+    results_train_best = open(
+        '../heuristic_algo/result/' + campaign + data_type['type'] + '/results_train.best.perf.txt', 'r')
     train_best_bid = {}
     for i, line in enumerate(results_train_best):
         if i == 0:
@@ -30,10 +32,12 @@ def choose_eCPC(campaign, original_ctr):
 
     return eCPC
 
+
 def run_env(budget_para):
     # 训练
     print('data loading')
-    test_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/test_' + data_type['type'] + '.csv', header=None).drop([0])
+    test_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/test_' + data_type['type'] + '.csv',
+                            header=None).drop([0])
     test_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2] \
         = test_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2].astype(
         int)
@@ -80,7 +84,7 @@ def run_env(budget_para):
         e_true_value = [0 for i in range(24)]
         e_miss_true_value = [0 for i in range(24)]
         e_win_imp_with_clk_value = [0 for i in range(24)]
-        e_win_imp_without_clk_cost = [0 for i in range(24)] # 各个时段浪费在没有点击的曝光上的预算
+        e_win_imp_without_clk_cost = [0 for i in range(24)]  # 各个时段浪费在没有点击的曝光上的预算
         e_lose_imp_with_clk_value = [0 for i in range(24)]
         e_clk_aucs = [0 for i in range(24)]
         e_clk_no_win_aucs = [0 for i in range(24)]
@@ -123,13 +127,15 @@ def run_env(budget_para):
             win_auctions = auc_datas[bids >= auc_datas[:, config['data_marketprice_index']]]
             no_win_auctions = auc_datas[bids <= auc_datas[:, config['data_marketprice_index']]]
             e_cost[t] = np.sum(win_auctions[:, config['data_marketprice_index']])
-            e_profits[t] = np.sum(win_auctions[:, config['data_pctr_index']] * eCPC - win_auctions[:, config['data_marketprice_index']])
+            e_profits[t] = np.sum(
+                win_auctions[:, config['data_pctr_index']] * eCPC - win_auctions[:, config['data_marketprice_index']])
 
             e_true_value[t] = np.sum(win_auctions[:, config['data_pctr_index']] * eCPC)
             e_miss_true_value[t] = np.sum(no_win_auctions[:, config['data_pctr_index']] * eCPC)
             with_clk_win_auctions = win_auctions[win_auctions[:, config['data_clk_index']] == 1]
             e_win_imp_with_clk_value[t] = np.sum(with_clk_win_auctions[:, config['data_pctr_index']] * eCPC)
-            e_win_imp_without_clk_cost[t] = np.sum(win_auctions[win_auctions[:, config['data_clk_index']] == 0][:, config['data_marketprice_index']])
+            e_win_imp_without_clk_cost[t] = np.sum(
+                win_auctions[win_auctions[:, config['data_clk_index']] == 0][:, config['data_marketprice_index']])
             with_clk_no_win_auctions = no_win_auctions[no_win_auctions[:, config['data_clk_index']] == 1]
             e_lose_imp_with_clk_value[t] = np.sum(with_clk_no_win_auctions[:, config['data_pctr_index']] * eCPC)
 
@@ -194,7 +200,8 @@ def run_env(budget_para):
                         if temp_clk == 0:
                             e_win_imp_without_clk_cost[t] += temp_market_price
                         else:
-                            e_win_imp_with_clk_value[t] += (current_data[config['data_pctr_index']] * eCPC - temp_market_price)
+                            e_win_imp_with_clk_value[t] += (
+                                        current_data[config['data_pctr_index']] * eCPC - temp_market_price)
                         e_profits[t] += (current_data[config['data_pctr_index']] * eCPC - temp_market_price)
                         e_true_value[t] += current_data[config['data_pctr_index']] * eCPC
                         e_clks[t] += temp_clk
@@ -206,7 +213,8 @@ def run_env(budget_para):
                         temp_lose_cost += temp_market_price
                         if temp_clk == 1:
                             e_clk_no_win_aucs[t] += 1
-                            e_lose_imp_with_clk_value[t] += (current_data[config['data_pctr_index']] * eCPC - temp_market_price)
+                            e_lose_imp_with_clk_value[t] += (
+                                        current_data[config['data_pctr_index']] * eCPC - temp_market_price)
                         else:
                             e_no_clk_no_win_aucs[t] += 1
                 e_cost[t] = temp_cost
@@ -218,7 +226,7 @@ def run_env(budget_para):
                 win_rate_t = len(win_auctions) / len(auc_datas)
             budget_left_ratio = (budget - np.sum(e_cost[:t + 1])) / budget
             budget_left_ratio = budget_left_ratio if budget_left_ratio >= 0 else 0
-            time_left_ratio = (23 - t)/ 24
+            time_left_ratio = (23 - t) / 24
             avg_time_spend = budget_left_ratio / time_left_ratio if time_left_ratio > 0 else 0
             cost_t_ratio = e_cost[t] / budget
             if t == 0:
@@ -230,7 +238,7 @@ def run_env(budget_para):
             action_ = np.clip(action_ + ou_noise()[0] * exploration_rate, -0.99, 0.99)
             next_action = action_
 
-            reward = e_clks[t] # 奖励函数type3
+            reward = e_clks[t]  # 奖励函数type3
             e_reward[t] = reward
             transition = np.hstack((state.tolist(), action, reward, state_.tolist()))
             RL.store_transition(transition)
@@ -241,7 +249,7 @@ def run_env(budget_para):
             if RL.memory_counter % config['observation_size'] == 0:
                 is_learn = True
                 exploration_rate *= 0.999
-            if is_learn: # after observing config['observation_size'] times, for config['learn_iter'] learning time
+            if is_learn:  # after observing config['observation_size'] times, for config['learn_iter'] learning time
                 for m in range(config['learn_iter']):
                     td_e, a_loss = RL.learn()
                     td_error, action_loss = td_e, a_loss
@@ -252,38 +260,42 @@ def run_env(budget_para):
             if np.sum(e_cost) >= budget:
                 break
 
-        e_result = [np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)), int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
+        e_result = [np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
+                    int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
                     np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, td_error, action_loss]
         e_results.append(e_result)
 
         if (episode > 0) and ((episode + 1) % 10 == 0):
             actions_df = pd.DataFrame(data=actions)
-            actions_df.to_csv(data_type['campaign_id'] + 'result/train_actions_' + str(budget_para) + '.csv')
+            actions_df.to_csv(log_path + '/result/train_actions_' + str(budget_para) + '.csv')
 
             hour_clks = {'clks': e_clks, 'no_bid_clks': np.subtract(real_hour_clks, e_clks).tolist(),
                          'real_clks': real_hour_clks}
             hour_clks_df = pd.DataFrame(data=hour_clks)
-            hour_clks_df.to_csv(data_type['campaign_id'] + 'result/train_hour_clks_' + str(budget_para) + '.csv')
+            hour_clks_df.to_csv(log_path + '/result/train_hour_clks_' + str(budget_para) + '.csv')
             print(
                 'episode {}, reward={}, profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, td_error={}, action_loss={}\n'.format(
                     episode + 1, np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
                     int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
                     np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, td_error, action_loss))
-            test_result, test_actions, test_hour_clks = test_env(config['test_budget'] * budget_para, budget_para, test_data, eCPC)
+            test_result, test_actions, test_hour_clks = test_env(config['test_budget'] * budget_para, budget_para,
+                                                                 test_data, eCPC)
             test_records.append(test_result)
             e_actions.append(test_actions)
 
-    e_results_df = pd.DataFrame(data=e_results, columns=['reward', 'profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
-                                                         'break_time_slot', 'td_error', 'action_loss'])
-    e_results_df.to_csv(data_type['campaign_id'] + 'result/train_episode_results_' + str(budget_para) + '.csv')
+    e_results_df = pd.DataFrame(data=e_results,
+                                columns=['reward', 'profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps',
+                                         'cpm',
+                                         'break_time_slot', 'td_error', 'action_loss'])
+    e_results_df.to_csv(log_path + '/result/train_episode_results_' + str(budget_para) + '.csv')
 
     e_actions_df = pd.DataFrame(data=e_actions)
-    e_actions_df.to_csv(data_type['campaign_id'] + 'result/test_episode_actions_' + str(budget_para) + '.csv')
+    e_actions_df.to_csv(log_path + '/result/test_episode_actions_' + str(budget_para) + '.csv')
 
     test_records_df = pd.DataFrame(data=test_records,
                                    columns=['profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                             'break_time_slot'])
-    test_records_df.to_csv(data_type['campaign_id'] + 'result/test_episode_results_' + str(budget_para) + '.csv')
+    test_records_df.to_csv(log_path + '/result/test_episode_results_' + str(budget_para) + '.csv')
 
 
 def test_env(budget, budget_para, test_data, eCPC):
@@ -328,7 +340,8 @@ def test_env(budget, budget_para, test_data, eCPC):
 
         e_cost[t] = np.sum(win_auctions[:, config['data_marketprice_index']])
         e_clks[t] = np.sum(win_auctions[:, config['data_clk_index']], dtype=int)
-        e_profits[t] = np.sum(win_auctions[:, config['data_pctr_index']] * eCPC - win_auctions[:, config['data_marketprice_index']])
+        e_profits[t] = np.sum(
+            win_auctions[:, config['data_pctr_index']] * eCPC - win_auctions[:, config['data_marketprice_index']])
         imps[t] = len(win_auctions)
         real_clks[t] = np.sum(auc_datas[:, config['data_clk_index']], dtype=int)
         bid_nums[t] = len(auc_datas)
@@ -384,7 +397,8 @@ def test_env(budget, budget_para, test_data, eCPC):
         if np.sum(e_cost) >= budget:
             break
     print('-----------测试结果-----------\n')
-    result = [np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)), int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
+    result = [np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)), int(np.sum(real_clks)), np.sum(bid_nums),
+              np.sum(imps),
               np.sum(e_cost) / np.sum(imps), break_time_slot]
     hour_clks = {'clks': e_clks, 'no_bid_clks': np.subtract(real_hour_clks, e_clks).tolist(),
                  'real_clks': real_hour_clks}
@@ -393,22 +407,25 @@ def test_env(budget, budget_para, test_data, eCPC):
     result_df = pd.DataFrame(data=results,
                              columns=['profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                       'break_time_slot'])
-    result_df.to_csv(data_type['campaign_id'] + 'result/test_result_' + str(budget_para) + '.csv')
+    result_df.to_csv(log_path + '/result/test_result_' + str(budget_para) + '.csv')
 
     test_actions_df = pd.DataFrame(data=actions)
-    test_actions_df.to_csv(data_type['campaign_id'] + 'result/test_action_' + str(budget_para) + '.csv')
+    test_actions_df.to_csv(log_path + '/result/test_action_' + str(budget_para) + '.csv')
 
     test_hour_clks_df = pd.DataFrame(data=hour_clks)
-    test_hour_clks_df.to_csv(data_type['campaign_id'] + 'result/test_hour_clks_' + str(budget_para) + '.csv')
-    print('profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, {}\n'.format(
-        np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
-        int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
-        np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, datetime.datetime.now()))
+    test_hour_clks_df.to_csv(log_path + '/result/test_hour_clks_' + str(budget_para) + '.csv')
+    print(
+        'profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, {}\n'.format(
+            np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
+            int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
+            np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, datetime.datetime.now()))
 
     return result, actions, hour_clks
 
 
 if __name__ == '__main__':
+    log_path = data_type['campaign_id'] + data_type['type']
+
     RL = DDPG(
         feature_nums=config['feature_num'],
         action_nums=1,
