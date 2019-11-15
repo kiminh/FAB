@@ -115,6 +115,7 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
             B_t[time_t] = 0
         remain_auc_num[time_t] = remain_auc_num[time_t - 1] - t_auctions
         if remain_auc_num[time_t] < 0:
+            done = 1
             remain_auc_num[time_t] = 0
         BCR_t_current = (B_t[time_t] - B_t[time_t - 1]) / B_t[time_t - 1] if B_t[time_t - 1] > 0 else 0
         BCR_t = BCR_t_current
@@ -151,7 +152,7 @@ def test_env(directory, budget_para, test_data, init_lamda, actions):
     e_real_labels = []
     e_hours = []
     e_ctrs = []
-    e_clks = 0
+    e_clks = []
     temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = 0, [], []
 
     for t in range(96):
@@ -178,20 +179,25 @@ def test_env(directory, budget_para, test_data, init_lamda, actions):
             state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done, bid_arrays = state_(
                 budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                 temp_lamda_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
+
+
             action = actions[t]
 
             lamda_t_next = lamda_t * (1 + action)
 
             temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
 
-        e_clks += t_clks
+        if done == 1:
+            break
+
+        e_clks = np.hstack((e_clks, t_clks))
         e_bids = np.hstack((e_bids, bid_arrays))
         e_real_labels = np.hstack((e_real_labels, real_labels))
         e_market_prices = np.hstack((e_market_prices, market_prices))
         e_hours = np.hstack((e_hours, hours))
         e_ctrs = np.hstack((e_ctrs, auc_t_data_pctrs))
 
-    print(e_clks)
+    print(np.sum(e_clks))
     records = {'bids': e_bids.tolist(), 'market_prices':e_market_prices.tolist(), 'clks': e_real_labels, 'hours': e_hours, 'ctrs': e_ctrs}
     records_df = pd.DataFrame(data=records)
     records_df.to_csv(directory + '/bids_' + str(budget_para) + '.csv', index=None)
@@ -208,7 +214,7 @@ def max_train_index(directory, para):
     max_test_value = []
     max_test_value_index = []
     for index in max_value_indexs:
-        max_test_value.append(test_clks[int(index[0])])
+        max_test_value.append(test_clks[int(index[0]), 1])
         max_test_value_index.append(int(index[0]))
 
     test_value_max_index = np.argmax(max_test_value)  # max_test_value 最大值的索引
@@ -260,6 +266,18 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
 
     test_env(result_directory, budget_para, test_data, init_lamda, actions)
 
+def time_fraction_to_time_slot(records):
+    new_records = []
+    for i, record in enumerate(records):
+        if i == 0:
+            continue
+
+        if i % 4 == 0:
+            new_records.append(np.sum(records[i-3:i+1]))
+        elif i == 95:
+            new_records.append(np.sum(records[93:i+1]))
+
+    return new_records
 
 def list_metrics(budget_para, result_directory):
     bid_records = pd.read_csv(result_directory + '/bids_' + str(budget_para) + '.csv', header=None).drop([0])
@@ -270,7 +288,10 @@ def list_metrics(budget_para, result_directory):
     hour_cost_records = []
     hour_cpc_records = []
     hour_imp_records = []
-    for hour_clip in range(24):
+
+    current_auc_nums = [0 for i in range(96)]
+    current_costs = [0 for i in range(96)]
+    for hour_clip in range(96):
         hour_records = bid_records[bid_records.iloc[:, 3].isin([hour_clip])]
         hour_records = hour_records.values
 
@@ -281,15 +302,32 @@ def list_metrics(budget_para, result_directory):
         hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
         hour_imps = len(win_records)
 
+        current_auc_nums[hour_clip] = len(hour_records)
+        current_costs[hour_clip] = hour_costs
+        if np.sum(current_costs) >= config['test_budget'] * budget_para or np.sum(current_auc_nums) > config['test_auc_num']:
+            hour_clks = 0
+            hour_costs = 0
+            hour_imps = 0
+            current_auc_nums[hour_clip] = 0
+            current_costs[hour_clip] = 0
+            for hour_record in hour_records:
+                if hour_record[:, 0] >= hour_record[:, 1]:
+                    hour_clks += hour_record[:, 2]
+                    hour_costs += hour_record[:, 1]
+                    current_costs[hour_clip] += hour_record[:, 1]
+                    hour_imps += 1
+                current_auc_nums[hour_clip] += 1
+            hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
+
         hour_clk_records.append(hour_clks)
         hour_cost_records.append(hour_costs)
         hour_cpc_records.append(hour_cpc)
         hour_imp_records.append(hour_imps)
 
-    print(hour_clk_records)
-    print(hour_cost_records)
-    print(hour_cpc_records)
-    print(hour_imp_records)
+    hour_clk_records = time_fraction_to_time_slot(hour_clk_records)
+    hour_cost_records = time_fraction_to_time_slot(hour_cost_records)
+    hour_cpc_records = time_fraction_to_time_slot(hour_cpc_records)
+    hour_imp_records = time_fraction_to_time_slot(hour_imp_records)
 
     records = [hour_clk_records, hour_cost_records, hour_cpc_records, hour_imp_records]
 
@@ -367,9 +405,11 @@ def clk_frequency(budget_para, result_directory):
     is_in_indexs = bid_records[bid_records.iloc[:, 0].isin(record_clk_indexs)].iloc[:, 3].unique() # 有哪些时段出现了record_clk_index
     index_dicts = {}
     for index in is_in_indexs:
+        index = time_slot_indexs[index]
         index_dicts.setdefault(index, 0)
 
     for hour_appear in hour_appear_arrays.values:
+        hour_appear = time_slot_indexs[hour_appear]
         index_dicts[hour_appear] += 1
 
     print('出价价格300出现次数最多时段排序')
@@ -397,6 +437,13 @@ def ctr_statistics(budget_para, result_directory):
 
 # 由启发式算法得到最优eCPC 1458-60920.22773088766,38767.41764692851,33229.21512593873, 22152.81008395915‬
 # 3386-77901.22125145316‬,47939.21307781733,35954.409808363,23969.60653890866‬
+
+time_slot_indexs = {} # 将96个时段还原为24个时段
+time_slots = 24
+for k in range(time_slots):
+    times_of_four = 4 * (k + 1)
+    for l in range(4):
+        time_slot_indexs.setdefault(times_of_four - l, int(times_of_four / 4))
 
 budget_paras = [0.5, 0.25, 0.125, 0.0625]
 campaign_id = data_type['campaign_id']

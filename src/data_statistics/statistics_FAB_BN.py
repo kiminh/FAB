@@ -148,7 +148,7 @@ def choose_eCPC(budget_para, campaign, original_ctr, heuristic_result_path):
     return eCPC
 
 def to_bids(is_sample, budget_para, campaign_id, result_directory):
-    test_data = pd.read_csv('../../../data/' + campaign_id + 'test_' + is_sample + '.csv', header=None).drop([0])
+    test_data = pd.read_csv('../../data/' + campaign_id + 'test_' + is_sample + '.csv', header=None).drop([0])
     test_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2] \
         = test_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2].astype(
         int)
@@ -158,7 +158,7 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
     pd_test_data = test_data
     test_data = test_data.values
 
-    train_data = pd.read_csv('../../../data/' + campaign_id + 'train_' + is_sample + '.csv', header=None).drop([0])
+    train_data = pd.read_csv('../../data/' + campaign_id + 'train_' + is_sample + '.csv', header=None).drop([0])
     train_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2] \
         = train_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2].astype(
         int)
@@ -342,11 +342,11 @@ elif reward_type == 2:
 else:
     reward_directory = 'result'
 
-log_path = '../../' + project_name + '/'
+log_path = '../' + project_name + '/'
 
 result_directory = log_path + campaign_id + result_file + reward_directory
 
-heuristic_result_path = '../../heuristic_algo/result/' + campaign_id + result_file + '/results_train.best.perf.txt'
+heuristic_result_path = '../heuristic_algo/result/' + campaign_id + result_file + '/results_train.best.perf.txt'
 
 print('\n##########To Bids.csv files##########')
 for budget_para in budget_paras:

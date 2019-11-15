@@ -123,6 +123,7 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
             B_t[time_t] = 0
         remain_auc_num[time_t] = remain_auc_num[time_t - 1] - t_auctions
         if remain_auc_num[time_t] < 0:
+            done = 1
             remain_auc_num[time_t] = 0
         BCR_t_current = (B_t[time_t] - B_t[time_t - 1]) / B_t[time_t - 1] if B_t[time_t - 1] > 0 else 0
         BCR_t = BCR_t_current
@@ -382,7 +383,7 @@ def run_test(budget_para, original_ctr):
 
     temp_result = [episode_imps, episode_win_imps, episode_clks, episode_real_clks,
                              episode_profit, budget, episode_spent, episode_spent / episode_win_imps]
-    print(temp_result)
+
     return temp_result, action_records
 
 if __name__ == '__main__':
