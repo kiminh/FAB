@@ -167,15 +167,15 @@ class DRLB:
         b_r = torch.FloatTensor(batch_memory[:, self.feature_numbers + 1]).cuda()
         b_s_ = torch.FloatTensor(batch_memory[:, -self.feature_numbers:]).cuda()
 
-        b_is_done = torch.FloatTensor(batch_memory[:, -1]).view(self.batch_size, 1).cuda()
+        b_is_done = torch.FloatTensor(1 - batch_memory[:, -1]).view(self.batch_size, 1).cuda()
 
         # q_eval w.r.t the action in experience
         # b_a - 1的原因是，出价动作最高300，而数组的最大index为299
         q_eval = self.eval_net.forward(b_s).gather(1, b_a)  # shape (batch,1), gather函数将对应action的Q值提取出来做Bellman公式迭代
         q_next = self.target_net.forward(b_s_).detach()  # detach from graph, don't backpropagate，因为target网络不需要训练
 
-        q_target = b_r.view(self.batch_size, 1) + self.gamma * np.multiply(q_next.max(1)[0].view(self.batch_size,
-                                                                                     1), np.subtract(1, b_is_done))
+        q_target = b_r.view(self.batch_size, 1) + self.gamma * torch.mul(q_next.max(1)[0].view(self.batch_size,
+                                                                                     1), b_is_done)
 
         # 训练eval_net
         loss = self.loss_func(q_eval, q_target)

@@ -35,6 +35,7 @@ class Net(nn.Module):
         x_2 = self.fc2(x_1)
         x_2 = F.relu(x_2)
         actions_value = self.out(x_2)
+
         return actions_value
 
 class RewardNet:
@@ -61,7 +62,7 @@ class RewardNet:
             self.memory_D2_counter = 0
 
         # 将经验池<状态-动作-累积奖励>中的转换组初始化为0
-        self.memory_S = np.zeros((self.memory_size, self.feature_numbers + 2))
+        self.memory_S = np.zeros((self.memory_size, self.feature_numbers + 1))
 
         # 将经验池<状态-动作-累积奖励中最大>中的转换组初始化为0
         self.memory_D2 = np.zeros((self.memory_size, self.feature_numbers + 2))
@@ -75,9 +76,9 @@ class RewardNet:
 
     def return_model_reward(self, state):
         # 统一 observation 的 shape (1, size_of_observation)
-        state = torch.unsqueeze(torch.FloatTensor(state), 0)
+        state = torch.unsqueeze(torch.FloatTensor(state), 0).cuda()
 
-        model_reward = self.model_reward.forward(state).detach().numpy()
+        model_reward = self.model_reward.forward(state).detach().cpu().numpy()
         return model_reward
 
     def store_state_action_pair(self, s, a):
