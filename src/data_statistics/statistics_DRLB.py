@@ -288,6 +288,7 @@ def list_metrics(budget_para, result_directory):
     hour_cost_records = []
     hour_cpc_records = []
     hour_imp_records = []
+    hour_bid_nums_records = []
 
     current_auc_nums = [0 for i in range(96)]
     current_costs = [0 for i in range(96)]
@@ -297,6 +298,7 @@ def list_metrics(budget_para, result_directory):
 
         win_records = hour_records[hour_records[:, 0] >= hour_records[:, 1]]
 
+        hour_bid_nums = len(hour_records)
         hour_clks = np.sum(win_records[:, 2])
         hour_costs = np.sum(win_records[:, 1])
         hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
@@ -308,9 +310,14 @@ def list_metrics(budget_para, result_directory):
             hour_clks = 0
             hour_costs = 0
             hour_imps = 0
+            hour_bid_nums = 0
             current_auc_nums[hour_clip] = 0
             current_costs[hour_clip] = 0
             for hour_record in hour_records:
+                if np.sum(current_costs) >= config['test_budget'] * budget_para or np.sum(current_auc_nums) > config[
+                    'test_auc_num']:
+                    break
+                hour_bid_nums += 1
                 if hour_record[:, 0] >= hour_record[:, 1]:
                     hour_clks += hour_record[:, 2]
                     hour_costs += hour_record[:, 1]
@@ -319,19 +326,21 @@ def list_metrics(budget_para, result_directory):
                 current_auc_nums[hour_clip] += 1
             hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
 
+        hour_bid_nums_records.append(hour_bid_nums)
         hour_clk_records.append(hour_clks)
         hour_cost_records.append(hour_costs)
         hour_cpc_records.append(hour_cpc)
         hour_imp_records.append(hour_imps)
 
+    hour_bid_nums_records = time_fraction_to_time_slot(hour_bid_nums_records)
     hour_clk_records = time_fraction_to_time_slot(hour_clk_records)
     hour_cost_records = time_fraction_to_time_slot(hour_cost_records)
     hour_cpc_records = time_fraction_to_time_slot(hour_cpc_records)
     hour_imp_records = time_fraction_to_time_slot(hour_imp_records)
 
-    records = [hour_clk_records, hour_cost_records, hour_cpc_records, hour_imp_records]
+    records = [hour_clk_records, hour_cost_records, hour_cpc_records, hour_imp_records, hour_bid_nums_records]
 
-    for k in range(4):
+    for k in range(5):
         current_str = ''
         for m in range(len(hour_clk_records)):
             current_str = current_str + str(records[k][m]) + '\t'

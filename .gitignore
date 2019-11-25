@@ -1,6 +1,7 @@
 ##ignor these files##
 /data/1458/
 /data/3386/
+/backup-data/
 .idea
 /__pycache__/
 /src/__pycache__/

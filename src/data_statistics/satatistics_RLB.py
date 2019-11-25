@@ -14,17 +14,20 @@ def list_metrics(budget_para, result_directory):
     hour_cost_records = []
     hour_cpc_records = []
     hour_imp_records = []
+    hour_bid_nums_records = []
     for hour_clip in range(24):
         hour_records = bid_records[bid_records.iloc[:, 3].isin([hour_clip])]
         hour_records = hour_records.values
 
         win_records = hour_records[hour_records[:, 0] >= hour_records[:, 1]]
 
+        hour_bid_nums = len(hour_records)
         hour_clks = np.sum(win_records[:, 2])
         hour_costs = np.sum(win_records[:, 1])
         hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
         hour_imps = len(win_records)
 
+        hour_bid_nums_records.append(hour_bid_nums)
         hour_clk_records.append(hour_clks)
         hour_cost_records.append(hour_costs)
         hour_cpc_records.append(hour_cpc)
@@ -34,10 +37,11 @@ def list_metrics(budget_para, result_directory):
     print(hour_cost_records)
     print(hour_cpc_records)
     print(hour_imp_records)
+    print(hour_bid_nums_records)
 
-    records = [hour_clk_records, hour_cost_records, hour_cpc_records, hour_imp_records]
+    records = [hour_clk_records, hour_cost_records, hour_cpc_records, hour_imp_records, hour_bid_nums_records]
 
-    for k in range(4):
+    for k in range(5):
         current_str = ''
         for m in range(len(hour_clk_records)):
             current_str = current_str + str(records[k][m]) + '\t'
@@ -148,11 +152,11 @@ project_name = 'RLB'
 
 result_file = data_type['type']
 
-log_path = '../../' + project_name + '/result/'
+log_path = '../' + project_name + '/result/'
 
 result_directory = log_path + campaign_id + result_file
 
-heuristic_result_path = '../../heuristic_algo/result/' + campaign_id + result_file + '/results_train.best.perf.txt'
+heuristic_result_path = '../heuristic_algo/result/' + campaign_id + result_file + '/results_train.best.perf.txt'
 
 print('\n##########To Bids.csv files##########')
 for budget_para in budget_paras:

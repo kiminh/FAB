@@ -35,7 +35,7 @@ def generate_data(campaign_id):
     return test_clks, test_auc_nums
 
 # 对原始数据进行负采样，以对比FAB是否对环境具有动态适应性
-def down_sample(campaign_id,test_clks, test_auc_nums):
+def down_sample(campaign_id, test_clks, test_auc_nums):
     # 负采样后达到的点击率
     CLICK_RATE = 0.001  # 1:1000
 
@@ -78,6 +78,28 @@ def down_sample(campaign_id,test_clks, test_auc_nums):
                 print(t)
         fi.close()
     print('测试数据负采样完成')
+
+def all_sample(campaign_id):
+    train_data = pd.read_csv(campaign_id + '/train_data.csv')
+    train_data.to_csv(campaign_id + '/train_sample.csv', index=None)  # 训练集保持不变
+
+    test_data = pd.read_csv(campaign_id + '/test_data.csv').values
+    sample_length = 380000
+
+    sample_rate = sample_length / len(test_data)
+
+    sample_test_data = np.array([[]])
+    for i in range(24):
+        current_time_data = test_data[test_data[:, 3] == i]
+        sample_terms = np.random.choice(len(current_time_data), size=int(len(current_time_data) * sample_rate), replace=False)
+        if i == 0:
+            sample_test_data = current_time_data[sample_terms]
+        else:
+            sample_test_data = np.vstack((sample_test_data, current_time_data[sample_terms]))
+
+    columns = ['ctr', 'clk', 'market_price', 'hour', 'pctr', 'minutes']
+    sample_test_data_df = pd.DataFrame(data=sample_test_data, columns=columns)
+    sample_test_data_df.to_csv(campaign_id + '/test_sample.csv', index=None)
 
 # 生成DRLB所需的数据
 def to_DRLB_data(campaign_id, type, train_data, test_data):
@@ -193,14 +215,19 @@ def to_RLB_data(campaign_id, type, train_data, test_data):
 
 
 if __name__ == '__main__':
-    campaign_id = '3386'
+    campaign_id = '1458'
     type = data_type['type'] # down sample - sample; no sample - data
 
+    sample_type = 1 # 1 - down sample; 2 - all sample
     print('######Generate Train and Test Datas######\n')
     test_clks, test_auc_nums = generate_data(campaign_id)
 
-    print('######Down Sample Datas######\n')
-    down_sample(campaign_id, test_clks, test_auc_nums)
+    if sample_type == 1:
+        print('######Down Sample Datas######\n')
+        down_sample(campaign_id, test_clks, test_auc_nums)
+    else:
+        print('######All Sample Datas######\n')
+        all_sample(campaign_id)
 
     train_data = pd.read_csv(campaign_id + '/train_' + type + '.csv', header=None).drop([0])
     test_data = pd.read_csv(campaign_id + '/test_' + type + '.csv', header=None).drop([0])
