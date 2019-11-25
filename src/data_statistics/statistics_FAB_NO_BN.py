@@ -181,10 +181,12 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
 
     return pd_test_data
 
-def list_metrics(budget_para, result_directory):
+def list_metrics(test_data, budget_para, result_directory):
     bid_records = pd.read_csv(result_directory + '/bids_' + str(budget_para) + '.csv', header=None).drop([0])
     bid_records.iloc[:, 0] = bid_records.iloc[:, 0].astype(float)
     bid_records.iloc[:, 1:4] = bid_records.iloc[:, 1:4].astype(int)
+
+    budget = np.sum(test_data.iloc[:, 2]) * budget_para
 
     hour_clk_records = []
     hour_cost_records = []
@@ -202,6 +204,23 @@ def list_metrics(budget_para, result_directory):
         hour_costs = np.sum(win_records[:, 1])
         hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
         hour_imps = len(win_records)
+
+        if np.sum(hour_cost_records) >= budget:
+            hour_bid_nums = 0
+            hour_clks = 0
+            hour_costs = 0
+            hour_imps = 0
+
+            for i in range(len(hour_records)):
+                if (np.sum(hour_cost_records[:hour_clip]) + hour_costs) >= budget:
+                    break
+                hour_bid_nums += 1
+                if hour_records[i, 0] >= hour_records[i, 1]:
+                    hour_clks += hour_records[:, 2]
+                    hour_costs += hour_records[:, 1]
+                    hour_imps += 1
+
+            hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
 
         hour_bid_nums_records.append(hour_bid_nums)
         hour_clk_records.append(hour_clks)
@@ -371,7 +390,7 @@ for budget_para in budget_paras:
 print('\n##########List Metrics##########')
 for budget_para in budget_paras:
     print('\n------budget_para:{}------'.format(budget_para))
-    list_metrics(budget_para, result_directory)
+    list_metrics(pd_test_data, budget_para, result_directory)
 
 print('\n##########Action Distribution##########')
 for budget_para in budget_paras:
