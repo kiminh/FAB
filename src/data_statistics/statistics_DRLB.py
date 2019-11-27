@@ -203,13 +203,23 @@ def test_env(directory, budget_para, test_data, init_lamda, actions):
     records_df.to_csv(directory + '/bids_' + str(budget_para) + '.csv', index=None)
 
 def max_train_index(directory, para):
-    train_results = pd.read_csv(directory + '/train_episode_results_' + str(para) + '.csv')
-    train_clks = train_results.values[:, [0, 3]]
+    train_results = pd.read_csv(directory + '/train_episode_results_' + str(para) + '.csv').values
+    train_clks = train_results[:, [0 ,3]]
     test_results = pd.read_csv(directory + '/test_episode_results_' + str(para) + '.csv').values
     test_clks = test_results[:, [0, 3]]
 
-    max_value = train_clks[train_clks[:, 1].argsort()][-1, 1]
-    max_value_indexs = train_clks[train_clks[:, 1] == max_value]
+    every_ten_times = []
+    for i in range(1000):
+        if i == 0:
+            continue
+        if (i + 1) % 10 == 0:
+            every_ten_times.append(i)
+
+    train_clks_temp = train_clks[every_ten_times, :]
+
+    # 每10轮测试一轮
+    max_value = train_clks_temp[train_clks[every_ten_times, 1].argsort()][-1, 1]
+    max_value_indexs = train_clks_temp[train_clks[every_ten_times, 1] == max_value]
 
     max_test_value = []
     max_test_value_index = []
@@ -256,7 +266,7 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
     test_data = pd.read_csv('../DRLB/data/' + campaign_id + 'test_DRLB_' + is_sample + '.csv', header=None).drop([0])
 
     max_result_index = max_train_index(result_directory, budget_para)
-
+    print(max_result_index)
     init_lamda = choose_init_lamda(budget_para, campaign_id, original_ctr, heuristic_result_path)
 
     action_file = result_directory + '/test_episode_actions_' + str(budget_para) + '.csv'

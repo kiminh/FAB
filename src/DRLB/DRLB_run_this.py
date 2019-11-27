@@ -36,10 +36,8 @@ def statistics(B_t, origin_t_spent, origin_t_win_imps,
                             temp_profit_t += (auc_t_datas.iloc[i, 1] * cpc - auc_t_datas.iloc[i, 2])
                             temp_reward_t += auc_t_datas.iloc[i, 0]
                     else:
-                        RL.reset_epsilon(0.05) # final epsilon value
                         break
                 else:
-                    RL.reset_epsilon(0.05) # final epsilon value
                     break
             t_auctions = temp_t_auctions
             t_spent = temp_t_spent if temp_t_spent > 0 else 0
@@ -78,12 +76,8 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
     # BCR_t = 0
     if time_t == 0:
         if remain_auc_num[0] > 0:
-            if remain_auc_num[0] - t_auctions <= 0:
-                t_win_imps, t_spent, t_auctions, reward_t, t_clks, profit_t \
-                    = statistics(B_t, t_spent, t_win_imps, t_auctions, t_clks, reward_t, profit_t, auc_t_datas, bid_arrays, remain_auc_num, 0)
-            else:
-                t_win_imps, t_spent, t_auctions, reward_t, t_clks, profit_t \
-                    = statistics(B_t, t_spent, t_win_imps, t_auctions, t_clks, reward_t, profit_t, auc_t_datas, bid_arrays, remain_auc_num, 0)
+            t_win_imps, t_spent, t_auctions, reward_t, t_clks, profit_t \
+                = statistics(B_t, t_spent, t_win_imps, t_auctions, t_clks, reward_t, profit_t, auc_t_datas, bid_arrays, remain_auc_num, 0)
         else:
             t_win_imps = 0
             t_spent = 0
@@ -102,12 +96,8 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
         BCR_t = BCR_t_0
     else:
         if remain_auc_num[time_t - 1] > 0:
-            if remain_auc_num[time_t - 1] - t_auctions <= 0:
-                t_win_imps, t_spent, t_auctions, reward_t, t_clks, profit_t \
-                    = statistics(B_t, t_spent, t_win_imps, t_auctions, t_clks, reward_t, profit_t, auc_t_datas, bid_arrays, remain_auc_num, time_t - 1)
-            else:
-                t_win_imps, t_spent, t_auctions, reward_t, t_clks, profit_t \
-                    = statistics(B_t, t_spent, t_win_imps, t_auctions, t_clks, reward_t, profit_t, auc_t_datas, bid_arrays, remain_auc_num, time_t - 1)
+            t_win_imps, t_spent, t_auctions, reward_t, t_clks, profit_t \
+                = statistics(B_t, t_spent, t_win_imps, t_auctions, t_clks, reward_t, profit_t, auc_t_datas, bid_arrays, remain_auc_num, time_t - 1)
         else:
             t_auctions = 0
             t_spent = 0
@@ -119,11 +109,12 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
         B_t[time_t] = B_t[time_t - 1] - t_spent
         if B_t[time_t] < 0:
             done = 1
-            RL.reset_epsilon(0.05)
+            RL.reset_epsilon(0.05) # final epsilon value
             B_t[time_t] = 0
         remain_auc_num[time_t] = remain_auc_num[time_t - 1] - t_auctions
         if remain_auc_num[time_t] < 0:
             done = 1
+            RL.reset_epsilon(0.05)
             remain_auc_num[time_t] = 0
         BCR_t_current = (B_t[time_t] - B_t[time_t - 1]) / B_t[time_t - 1] if B_t[time_t - 1] > 0 else 0
         BCR_t = BCR_t_current
@@ -200,7 +191,7 @@ def run_env(budget_para):
         episode_spent = 0
         episode_profit = 0
 
-        action_records = []
+        action_records = [-1 for _ in range(96)]
         temp_lamda_record = [init_lamda]
 
         V = 0 # current episode's cumulative directive reward
@@ -263,7 +254,7 @@ def run_env(budget_para):
             RL.store_transition(transition) # 存储在DRLB的经验池中
             RewardNet.store_state_action_pair(state_t, action) # 存储在Reward_net中
 
-            action_records.append(action)
+            action_records[t] = action
             RL.up_learn_step()
             RL.control_epsilon(t + 1)
 
@@ -278,6 +269,9 @@ def run_env(budget_para):
 
             if RL.memory_counter >= config['batch_size']: # 控制更新速度
                 RL.learn()
+
+            if done == 1:
+                break
 
         RewardNet.reset_D2(V)
 
@@ -338,7 +332,7 @@ def run_test(budget_para, original_ctr):
 
     temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = 0, [], []
 
-    action_records = []
+    action_records = [-1 for _ in range(96)]
 
     lamda_record = [init_lamda]
     for t in range(96):
@@ -362,13 +356,15 @@ def run_test(budget_para, original_ctr):
 
             lamda_t_next = lamda_t * (1 + action)
 
+            if t == 95:
+                done = 1
 
             temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
 
             if t + 1 == 95:
                 lamda_record.append(lamda_t_next)
 
-        action_records.append(action)
+        action_records[t] = action
 
         episode_clks += t_clks
         episode_real_clks += t_real_clks
@@ -376,6 +372,9 @@ def run_test(budget_para, original_ctr):
         episode_win_imps += t_win_imps
         episode_spent += t_spent
         episode_profit += reward_t
+
+        if done == 1:
+            break
 
     print('测试集中：真实曝光数{}, 赢标数{}, 共获得{}个点击, 真实点击数{}, '
           '利润{}, 预算{}, 花费{}, CPM{}, {}'.format(episode_imps, episode_win_imps, episode_clks, episode_real_clks,
