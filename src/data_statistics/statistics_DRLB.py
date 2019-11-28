@@ -187,15 +187,15 @@ def test_env(directory, budget_para, test_data, init_lamda, actions):
 
             temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
 
-        if done == 1:
-            break
-
         e_clks = np.hstack((e_clks, t_clks))
         e_bids = np.hstack((e_bids, bid_arrays))
         e_real_labels = np.hstack((e_real_labels, real_labels))
         e_market_prices = np.hstack((e_market_prices, market_prices))
         e_hours = np.hstack((e_hours, hours))
         e_ctrs = np.hstack((e_ctrs, auc_t_data_pctrs))
+
+        if done == 1:
+            break
 
     print(np.sum(e_clks))
     records = {'bids': e_bids.tolist(), 'market_prices':e_market_prices.tolist(), 'clks': e_real_labels, 'hours': e_hours, 'ctrs': e_ctrs}
@@ -328,10 +328,11 @@ def list_metrics(budget_para, result_directory):
                     'test_auc_num']:
                     break
                 hour_bid_nums += 1
-                if hour_record[:, 0] >= hour_record[:, 1]:
-                    hour_clks += hour_record[:, 2]
-                    hour_costs += hour_record[:, 1]
-                    current_costs[hour_clip] += hour_record[:, 1]
+
+                if hour_record[0] >= hour_record[1]:
+                    hour_clks += hour_record[2]
+                    hour_costs += hour_record[1]
+                    current_costs[hour_clip] += hour_record[1]
                     hour_imps += 1
                 current_auc_nums[hour_clip] += 1
             hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0

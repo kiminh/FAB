@@ -357,7 +357,7 @@ project_name = 'FAB_BN'
 
 result_file = data_type['type'] + '/'
 
-reward_type = 1 # 1-result_adjust_reward, 2-result_profit, 3-result
+reward_type = 2 # 1-result_adjust_reward, 2-result_profit, 3-result
 if reward_type == 1:
     reward_directory = 'result_adjust_reward'
 elif reward_type == 2:
