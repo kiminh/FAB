@@ -111,7 +111,7 @@ class DRLB:
 
         random_probability = max(self.epsilon, 0.5) # 论文的取法
 
-        if np.random.uniform() < random_probability:
+        if np.random.uniform() > random_probability:
             # 让 eval_net 神经网络生成所有 action 的值, 并选择值最大的 action
             actions_value = self.eval_net.forward(state)
             # torch.max(input, dim, keepdim=False, out=None) -> (Tensor, LongTensor),按维度dim 返回最大值
