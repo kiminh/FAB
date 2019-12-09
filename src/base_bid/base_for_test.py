@@ -154,7 +154,7 @@ if __name__ == '__main__':
 
     lin_opt_paras = select_lin_opt_paras(data_type['campaign_id'], data_type['type'])
     for k, proportion in enumerate(budget_proportions):
-        algo_paras = {"lin": [0], "bidding_opt": [0], "lin_opt": lin_opt_paras[k]}
+        algo_paras = {"lin": [0], "bidding_opt": [0], "lin_opt": [lin_opt_paras[k]]}
         for algo in algo_paras:
             simulate_one_bidding_strategy(bidding_opt_c, clicks_prices, pctrs, total_cost, proportion, algo, fo, data_type['campaign_id'], data_type['type'])
 
