@@ -82,9 +82,9 @@ def simulate_one_bidding_strategy(bidding_opt_c, cases, ctrs, tcost, proportion,
         hour_clks_data_df.to_csv('result/' + campaign + type + '/test_hour_clks_' + str(proportion) + '.csv')
         writer.write(res + '\n')
 
-def select_lin_opt_paras(campaign_id):
+def select_lin_opt_paras(campaign_id, type):
     lin_paras = {}
-    result_best_fi = open('../heuristic_algo/result/' + campaign_id + 'results_train.best.perf.txt', 'r')
+    result_best_fi = open('../heuristic_algo/result/' + campaign_id + type + '/results_train.best.perf.txt', 'r')
     for i, line in enumerate(result_best_fi):
         if i == 0:
             continue
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     fo.write(header + '\n')
     print(header)
 
-    lin_opt_paras = select_lin_opt_paras(data_type['campaign_id'])
+    lin_opt_paras = select_lin_opt_paras(data_type['campaign_id'], data_type['type'])
     for k, proportion in enumerate(budget_proportions):
         algo_paras = {"lin": [0], "bidding_opt": [0], "lin_opt": lin_opt_paras[k]}
         for algo in algo_paras:
