@@ -159,7 +159,9 @@ def run_env(budget_para):
     train_data.iloc[:, [0, 2, 3]] = train_data.iloc[:, [0, 2, 3]].astype(int)
     train_data.iloc[:, [1]] = train_data.iloc[:, [1]].astype(float)
 
-    config['train_budget'] = np.sum(train_data.iloc[:, 2])
+    # config['train_budget'] = np.sum(train_data.iloc[:, 2])
+    config['train_budget'] = 32000000
+
     config['train_auc_num'] = len(train_data)
     original_ctr = np.sum(train_data.iloc[:, 0]) / len(train_data)
 
@@ -310,7 +312,9 @@ def run_test(budget_para, original_ctr):
     test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
     test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
 
-    config['test_budget'] = np.sum(test_data.iloc[:, 2])
+    # config['test_budget'] = np.sum(test_data.iloc[:, 2])
+    config['test_budget'] = 32000000
+
     config['test_auc_num'] = len(test_data)
 
     auc_num = config['test_auc_num']
@@ -321,6 +325,8 @@ def run_test(budget_para, original_ctr):
 
     remain_auc_num = [0 for i in range(96)]
     remain_auc_num[0] = auc_num
+
+    RL.reset_epsilon(0.9)  # init epsilon value
 
     init_lamda = choose_init_lamda(data_type['campaign_id'], original_ctr)
     episode_clks = 0
@@ -344,7 +350,7 @@ def run_test(budget_para, original_ctr):
         if t == 0:
             state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                                                                          init_lamda, B_t, time_t, remain_auc_num)  # 1时段
-            action = RL.choose_best_action(state_t)
+            action = RL.choose_action(state_t)
 
             lamda_t_next = lamda_t * (1 + action)
 
@@ -352,7 +358,7 @@ def run_test(budget_para, original_ctr):
         else:
             state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                                                                          temp_lamda_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
-            action = RL.choose_best_action(state_t)
+            action = RL.choose_action(state_t)
 
             lamda_t_next = lamda_t * (1 + action)
 
@@ -362,7 +368,10 @@ def run_test(budget_para, original_ctr):
             temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
 
             if t + 1 == 95:
+                RL.reset_epsilon(0.05)
                 lamda_record.append(lamda_t_next)
+
+        RL.control_epsilon(t + 1)
 
         action_records[t] = action
 

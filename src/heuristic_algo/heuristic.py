@@ -79,8 +79,9 @@ def to_train_results(campaign, type):
         click = int(data[i][1])
         winning_price = int(data[i][2])
         clicks_prices.append((click, winning_price, int(data[i][3])))
-    total_cost += train_data.iloc[:, 2].sum()
 
+    # total_cost += train_data.iloc[:, 2].sum()
+    total_cost += 32000000
     print('总预算{}'.format(total_cost))
 
     pctrs = train_data.values[:, 4].flatten().tolist()

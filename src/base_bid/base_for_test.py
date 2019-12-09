@@ -8,8 +8,11 @@ from src.data_type import config as data_type
 import os
 random.seed(10)
 
-def bidding_lin(pctr, base_ctr, avg_market_price, base_bid):
+def bidding_lin(pctr, base_ctr, avg_market_price): # base_ctr是平均pCTR值
     return int(pctr * avg_market_price / base_ctr)
+
+def bidding_lin_opt(pctr, base_ctr, base_bid):
+    return int(pctr * base_bid / base_ctr)
 
 def bidding_opt(c, pCTR, lamda=5.5e-6):  # 出价策略函数
     bid_price = math.sqrt(c*pCTR/lamda + c**2) -c
@@ -39,9 +42,11 @@ def simulate_one_bidding_strategy_with_parameter(bidding_opt_c, cases, ctrs, tco
     for idx in range(0, len(cases)):
         pctr = ctrs[idx]
         if algo == "lin":
-            bid = bidding_lin(pctr, original_pctr, avg_market_price, para)
+            bid = bidding_lin(pctr, original_pctr, avg_market_price)
         elif algo == "bidding_opt":
             bid = bidding_opt(bidding_opt_c, pctr)
+        elif algo == "lin_opt":
+            bid = bidding_lin_opt(pctr, original_ctr, para)
         else:
             print('wrong bidding strategy name')
             sys.exit(-1)
@@ -77,6 +82,23 @@ def simulate_one_bidding_strategy(bidding_opt_c, cases, ctrs, tcost, proportion,
         hour_clks_data_df.to_csv('result/' + campaign + type + '/test_hour_clks_' + str(proportion) + '.csv')
         writer.write(res + '\n')
 
+def select_lin_opt_paras(campaign_id):
+    lin_paras = {}
+    result_best_fi = open('../heuristic_algo/result/' + campaign_id + 'results_train.best.perf.txt', 'r')
+    for i, line in enumerate(result_best_fi):
+        if i == 0:
+            continue
+        for budget_proportion in budget_proportions:
+            if budget_proportion == int(line.split('\t')[0]):
+                current_algo = line.split('\t')[10]
+                current_para = int(line.split('\t')[11])
+                if current_algo == 'lin':
+                    lin_paras[budget_proportion] = current_para
+    lin_paras = [item[1] for item in sorted(lin_paras.items(), key=lambda d: d[0], reverse=False)]
+
+    return lin_paras
+
+
 if __name__ == '__main__':
     if not os.path.exists('result'):
         os.mkdir('result')
@@ -104,7 +126,7 @@ if __name__ == '__main__':
     clicks_prices = [] # clk and price
     total_cost = 0 # total original cost during the test data
     # 从测试数据中读取测试数据
-    test_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/test_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
+    test_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + 'test_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
     test_data.iloc[:, 1: 4] \
             = test_data.iloc[:, 1 : 4].astype(
             int)
@@ -129,8 +151,10 @@ if __name__ == '__main__':
     header = "prop\tprofits\tclks\treal_clks\tbids\timps\treal_imps\tbudget\tspend\tcpm\talgo\tpara"
     fo.write(header + '\n')
     print(header)
+
+    lin_opt_paras = select_lin_opt_paras(data_type['campaign_id'])
     for k, proportion in enumerate(budget_proportions):
-        algo_paras = {"lin": [0], "bidding_opt": [0]}
+        algo_paras = {"lin": [0], "bidding_opt": [0], "lin_opt": lin_opt_paras[k]}
         for algo in algo_paras:
             simulate_one_bidding_strategy(bidding_opt_c, clicks_prices, pctrs, total_cost, proportion, algo, fo, data_type['campaign_id'], data_type['type'])
 

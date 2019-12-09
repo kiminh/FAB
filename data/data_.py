@@ -11,8 +11,8 @@ def generate_data(campaign_id):
     train_log = pd.read_csv(campaign_id + '/11_log.csv') # ipinyou 2013/06/11作为训练集
     test_log = pd.read_csv(campaign_id + '/12_log.csv') # ipinyou 2013/06/12作为测试集
 
-    train_ctr = pd.read_csv(campaign_id + '/11_test_submission.csv') # ipinyou 2013/06/11训练集的预测点击率文件
-    test_ctr = pd.read_csv(campaign_id + '/12_test_submission.csv') # ipinyou 2013/06/12测试集的预测点击率文件
+    train_ctr = pd.read_csv(campaign_id + '/11_test_submission.csv', header=None) # ipinyou 2013/06/11训练集的预测点击率文件
+    test_ctr = pd.read_csv(campaign_id + '/12_test_submission.csv', header=None) # ipinyou 2013/06/12测试集的预测点击率文件
 
     train_log_values = train_log.values
     train_data = {'ctr': train_ctr.values[:, 1] * 1000, 'clk': train_log_values[:, 0],
@@ -252,7 +252,7 @@ if __name__ == '__main__':
     campaign_id = data_type['campaign_id']
     type = data_type['type'] # down sample - sample; no sample - data
 
-    sample_type = 3 # 1 - down sample; 2 - all sample; 3 - train sample
+    sample_type = 1 # 1 - down sample; 2 - all sample; 3 - train sample
     print('######Generate Train and Test Datas######\n')
     test_clks, test_auc_nums = generate_data(campaign_id)
 

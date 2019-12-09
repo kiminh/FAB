@@ -39,7 +39,8 @@ def get_camp_info(camp, src="ipinyou"):
 		train_data.iloc[:, :] = train_data.iloc[:, :].astype(float)
 		test_data.iloc[:, :] = test_data.iloc[:, :].astype(float)
 
-		info['cost_train'], info['cost_test'] = np.sum(train_data.iloc[:, 1]), np.sum(test_data.iloc[:, 1])  # 5000000, 5000000
+		# info['cost_train'], info['cost_test'] = np.sum(train_data.iloc[:, 1]), np.sum(test_data.iloc[:, 1])
+		info['cost_train'], info['cost_test'] = 32000000, 32000000
 		info['imp_train'], info['imp_test'] = len(train_data), len(test_data)  # 155443, 145396
 		info['clk_train'], info['clk_test'] = int(np.sum(train_data.iloc[:, 0])), int(np.sum(test_data.iloc[:, 0]))
 		info['price_counter_train'] = price_counter_train(train_data)

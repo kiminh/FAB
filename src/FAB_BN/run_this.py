@@ -50,10 +50,12 @@ def run_env(budget_para):
         float)
     train_data = train_data.values
 
-    config['train_budget'] = np.sum(train_data[:, config['data_marketprice_index']])
+    # config['train_budget'] = np.sum(train_data[:, config['data_marketprice_index']])
+    config['train_budget'] = 32000000
     budget = config['train_budget'] * budget_para
 
-    config['test_budget'] = np.sum(test_data[:, config['data_marketprice_index']])
+    # config['test_budget'] = np.sum(test_data[:, config['data_marketprice_index']])
+    config['test_budget'] = 32000000
 
     original_ctr = np.sum(train_data[:, 1]) / len(train_data)
     real_hour_clks = []
