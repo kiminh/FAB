@@ -98,12 +98,13 @@ def select_lin_opt_paras(campaign_id, type):
 
     return lin_paras
 
-
 if __name__ == '__main__':
     if not os.path.exists('result'):
         os.mkdir('result')
 
-    if not os.path.exists('result/' + data_type['campaign_id'] + data_type['type']):
+    if not os.path.exists('result/' + data_type['campaign_id']):
+        os.mkdir('result/' + data_type['campaign_id'])
+    elif not os.path.exists('result/' + data_type['campaign_id'] + data_type['type']):
         os.mkdir('result/' + data_type['campaign_id'] + data_type['type'])
 
     # 从训练数据中读取到初始ecpc和初始ctr
@@ -139,8 +140,8 @@ if __name__ == '__main__':
         winning_price = int(data[i][2])
         clicks_prices.append((click, winning_price, int(data[i][3])))
 
-    total_cost += test_data.iloc[:, 2].sum()
-
+    # total_cost += test_data.iloc[:, 2].sum()
+    total_cost += 32000000
     print('总预算{}'.format(total_cost))
     pctrs = test_data.values[:, 4].flatten().tolist()
 
