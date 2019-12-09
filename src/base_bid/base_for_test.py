@@ -104,7 +104,8 @@ if __name__ == '__main__':
 
     if not os.path.exists('result/' + data_type['campaign_id']):
         os.mkdir('result/' + data_type['campaign_id'])
-    elif not os.path.exists('result/' + data_type['campaign_id'] + data_type['type']):
+
+    if not os.path.exists('result/' + data_type['campaign_id'] + data_type['type']):
         os.mkdir('result/' + data_type['campaign_id'] + data_type['type'])
 
     # 从训练数据中读取到初始ecpc和初始ctr
