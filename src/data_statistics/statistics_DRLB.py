@@ -135,7 +135,8 @@ def test_env(directory, budget_para, test_data, init_lamda, actions):
     test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
     test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
 
-    config['test_budget'] = np.sum(test_data.iloc[:, 2])
+    # config['test_budget'] = np.sum(test_data.iloc[:, 2])
+    config['test_budget'] = 32000000
     config['test_auc_num'] = len(test_data)
 
     auc_num = config['test_auc_num']
@@ -179,7 +180,6 @@ def test_env(directory, budget_para, test_data, init_lamda, actions):
             state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done, bid_arrays = state_(
                 budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                 temp_lamda_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
-
 
             action = actions[t]
 
@@ -259,7 +259,8 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
     train_data.iloc[:, [0, 2, 3]] = train_data.iloc[:, [0, 2, 3]].astype(int)
     train_data.iloc[:, [1]] = train_data.iloc[:, [1]].astype(float)
 
-    config['train_budget'] = np.sum(train_data.iloc[:, 2])
+    # config['train_budget'] = np.sum(train_data.iloc[:, 2])
+    config['train_budget'] = 32000000
     config['train_auc_num'] = len(train_data)
     original_ctr = np.sum(train_data.iloc[:, 0]) / len(train_data)
 

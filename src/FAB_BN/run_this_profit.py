@@ -30,8 +30,8 @@ def choose_eCPC(campaign, original_ctr):
     return eCPC
 
 # 奖励函数type2
-def adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_lose_imp_with_clk_value, e_clk_aucs, e_clk_no_win_aucs, t):
-    reward_degree = 1 - np.square(np.mean(np.true_divide(np.subtract(bids_t, market_prices_t), bids_t)))
+def adjust_reward(e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_lose_imp_with_clk_value, e_clk_aucs, e_clk_no_win_aucs, t):
+    reward_degree = 1 - np.mean(np.true_divide(np.subtract(bid_win_t, market_price_win_t), bid_win_t))
     reward_win_imp_with_clk = (e_win_imp_with_clk_value[t] / e_true_value[t]) * reward_degree
     reward_win_imp_with_clk = reward_win_imp_with_clk if reward_degree > 0 else 0
 
@@ -41,8 +41,9 @@ def adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_wi
     reward_lose_imp_with_clk = - base_punishment / punish_no_win_rate
 
     reward_t = reward_win_imp_with_clk + reward_lose_imp_with_clk
+    n = 1e5
 
-    return reward_t
+    return reward_t / n
 
 def run_env(budget_para):
     # 训练
@@ -163,8 +164,10 @@ def run_env(budget_para):
             e_lose_imp_without_clk_cost[t] = np.sum(without_clk_no_win_auctions[:, config['data_marketprice_index']])
             e_no_clk_no_win_aucs[t] = len(without_clk_no_win_auctions)
 
-            bids_t = bids
             market_prices_t = auc_datas[:, config['data_marketprice_index']]
+
+            bid_win_t = bids[bids >= auc_datas[:, config['data_marketprice_index']]]
+            market_price_win_t = market_prices_t[bids >= auc_datas[:, config['data_marketprice_index']]]
             if np.sum(e_cost) >= budget:
                 break_time_slot = t
                 temp_cost = 0
@@ -188,8 +191,10 @@ def run_env(budget_para):
                 e_no_clk_aucs[t] = 0
                 e_no_clk_no_win_aucs[t] = 0
 
-                bids_t = []
                 market_prices_t = []
+
+                bid_win_t = []
+                market_price_win_t = []
                 for i in range(len(auc_datas)):
                     if temp_cost >= (budget - np.sum(e_cost[:t])):
                         break
@@ -209,13 +214,16 @@ def run_env(budget_para):
                         e_clk_aucs[t] += temp_clk
                     else:
                         e_no_clk_aucs[t] += 1
-                    bids_t.append(bid)
+
                     market_prices_t.append(temp_market_price)
                     if bid >= temp_market_price:
                         if temp_clk == 0:
                             e_win_imp_without_clk_cost[t] += temp_market_price
                         else:
-                            e_win_imp_with_clk_value[t] += (current_data[config['data_pctr_index']] * eCPC - temp_market_price)
+                            e_win_imp_with_clk_value[t] += current_data[config['data_pctr_index']] * eCPC
+                        bid_win_t.append(bid)
+                        market_price_win_t.append(temp_market_price)
+
                         e_profits[t] += (current_data[config['data_pctr_index']] * eCPC - temp_market_price)
                         e_true_value[t] += current_data[config['data_pctr_index']] * eCPC
                         e_clks[t] += temp_clk
@@ -227,7 +235,7 @@ def run_env(budget_para):
                         temp_lose_cost += temp_market_price
                         if temp_clk == 1:
                             e_clk_no_win_aucs[t] += 1
-                            e_lose_imp_with_clk_value[t] += (current_data[config['data_pctr_index']] * eCPC - temp_market_price)
+                            e_lose_imp_with_clk_value[t] += current_data[config['data_pctr_index']] * eCPC
                         else:
                             e_no_clk_no_win_aucs[t] += 1
                 e_cost[t] = temp_cost
@@ -251,7 +259,7 @@ def run_env(budget_para):
             action_ = np.clip(action_ + ou_noise()[0] * exploration_rate, -0.99, 0.99)
             next_action = action_
 
-            reward_t = adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_lose_imp_with_clk_value, e_clk_aucs, e_clk_no_win_aucs, t)
+            reward_t = adjust_reward(e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_lose_imp_with_clk_value, e_clk_aucs, e_clk_no_win_aucs, t)
             reward = reward_t
             e_reward[t] = reward
             transition = np.hstack((state.tolist(), action, reward, state_.tolist()))

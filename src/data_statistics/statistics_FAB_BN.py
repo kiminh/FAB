@@ -166,7 +166,8 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
         = train_data.iloc[:, config['data_pctr_index']].astype(
         float)
 
-    budget = np.sum(test_data[:, 2]) * budget_para
+    # budget = np.sum(test_data[:, 2]) * budget_para
+    budget = 32000000
     original_ctr = np.sum(train_data.iloc[:, 1]) / len(train_data)
 
     eCPC = choose_eCPC(budget_para, campaign_id, original_ctr, heuristic_result_path)
