@@ -14,7 +14,7 @@ def bidding_lin(pctr, base_ctr, avg_market_price): # base_ctr是平均pCTR值
 def bidding_lin_opt(pctr, base_ctr, base_bid):
     return int(pctr * base_bid / base_ctr)
 
-def bidding_opt(c, pCTR, lamda=5.5e-6):  # 出价策略函数
+def bidding_opt(c, pCTR, lamda=8.2e-7):  # 出价策略函数, 5.5e-6
     bid_price = math.sqrt(c*pCTR/lamda + c**2) -c
     return bid_price
 

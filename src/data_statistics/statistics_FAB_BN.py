@@ -7,12 +7,12 @@ from src.FAB_BN.config import config
 from src.data_type import config as data_type
 
 def test_env(directory, budget, budget_para, test_data, eCPC, actions):
+    budget = budget * budget_para
+    e_clks = [0 for i in range(data_type['fraction_type'])]  # episode各个时段所获得的点击数，以下类推
+    e_cost = [0 for i in range(data_type['fraction_type'])]
 
-    e_clks = [0 for i in range(24)]  # episode各个时段所获得的点击数，以下类推
-    e_cost = [0 for i in range(24)]
-
-    bid_nums = [0 for i in range(24)]
-    imps = [0 for i in range(24)]
+    bid_nums = [0 for i in range(data_type['fraction_type'])]
+    imps = [0 for i in range(data_type['fraction_type'])]
 
     e_bids = np.array([])
     e_market_prices = np.array([])
@@ -20,8 +20,11 @@ def test_env(directory, budget, budget_para, test_data, eCPC, actions):
     e_real_labels = np.array([]) # 是否被点击
     e_ctrs = np.array([])
     # 状态包括：当前CTR，
-    for t in range(24):
+    for t in range(data_type['fraction_type']):
         auc_datas = test_data[test_data[:, config['data_hour_index']] == t]
+
+        if len(auc_datas) == 0:
+            continue
 
         bids = auc_datas[:, config['data_pctr_index']] * eCPC / (1 + actions[t])
 
@@ -148,27 +151,33 @@ def choose_eCPC(budget_para, campaign, original_ctr, heuristic_result_path):
     return eCPC
 
 def to_bids(is_sample, budget_para, campaign_id, result_directory):
-    test_data = pd.read_csv('../../data/' + campaign_id + 'test_' + is_sample + '.csv', header=None).drop([0])
+    test_data = pd.read_csv('../../data/' + campaign_id + str(data_type['fraction_type']) + '/test_' + is_sample + '.csv', header=None).drop([0])
     test_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2] \
         = test_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2].astype(
         int)
     test_data.iloc[:, config['data_pctr_index']] \
         = test_data.iloc[:, config['data_pctr_index']].astype(
         float)
+    test_data.iloc[:, config['data_fraction_index']] \
+        = test_data.iloc[:, config['data_fraction_index']].astype(
+        float)
     pd_test_data = test_data
     test_data = test_data.values
 
-    train_data = pd.read_csv('../../data/' + campaign_id + 'train_' + is_sample + '.csv', header=None).drop([0])
+    train_data = pd.read_csv('../../data/' + campaign_id + str(data_type['fraction_type']) + '/train_' + is_sample + '.csv', header=None).drop([0])
     train_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2] \
         = train_data.iloc[:, config['data_clk_index']:config['data_marketprice_index'] + 2].astype(
         int)
     train_data.iloc[:, config['data_pctr_index']] \
         = train_data.iloc[:, config['data_pctr_index']].astype(
         float)
+    train_data.iloc[:, config['data_fraction_index']] \
+        = train_data.iloc[:, config['data_fraction_index']].astype(
+        float)
 
     # budget = np.sum(test_data[:, 2]) * budget_para
     budget = 32000000
-    original_ctr = np.sum(train_data.iloc[:, 1]) / len(train_data)
+    original_ctr = np.sum(train_data.iloc[:, 0]) / len(train_data)
 
     eCPC = choose_eCPC(budget_para, campaign_id, original_ctr, heuristic_result_path)
 
@@ -187,14 +196,14 @@ def list_metrics(test_data, budget_para, result_directory):
     bid_records.iloc[:, 0] = bid_records.iloc[:, 0].astype(float)
     bid_records.iloc[:, 1:4] = bid_records.iloc[:, 1:4].astype(int)
 
-    budget = np.sum(test_data.iloc[:, 2]) * budget_para
-
+    # budget = np.sum(test_data.iloc[:, 2]) * budget_para
+    budget = 32000000
     hour_clk_records = []
     hour_cost_records = []
     hour_cpc_records = []
     hour_imp_records = []
     hour_bid_nums_records = []
-    for hour_clip in range(24):
+    for hour_clip in range(data_type['fraction_type']):
         hour_records = bid_records[bid_records.iloc[:, 3].isin([hour_clip])]
         hour_records = hour_records.values
 
@@ -301,7 +310,7 @@ def action_distribution(budget_para, result_directory):
 
 def clk_frequency(test_data, budget_para, result_directory):
     real_labels = []
-    for i in range(24):
+    for i in range(data_type['fraction_type']):
         real_labels.append(
             np.sum(test_data[test_data.iloc[:, config['data_hour_index']].isin([i])].iloc[:, config['data_clk_index']]))
     print(real_labels)
@@ -358,13 +367,8 @@ project_name = 'FAB_BN'
 
 result_file = data_type['type'] + '/'
 
-reward_type = 1 # 1-result_adjust_reward, 2-result_profit, 3-result
-if reward_type == 1:
-    reward_directory = 'result_adjust_reward'
-elif reward_type == 2:
-    reward_directory = 'result_profit'
-else:
-    reward_directory = 'result'
+reward_type = '1' # 1-reward type 1, 2-reward type 2, 3-reward type 3
+reward_directory = 'result_reward_' + reward_type
 
 log_path = '../' + project_name + '/'
 
@@ -380,8 +384,8 @@ for budget_para in budget_paras:
 
 # 各个时段的平均市场价格
 print('\n##########Time slots’average market prices##########')
-for i in range(24):
-    print(np.sum(pd_test_data[pd_test_data.iloc[:, 3].isin([i])].iloc[:, 2])/len(pd_test_data[pd_test_data.iloc[:, 3].isin([i])]))
+for i in range(data_type['fraction_type']):
+    print(np.sum(pd_test_data[pd_test_data.iloc[:, 2].isin([i])].iloc[:, 1])/len(pd_test_data[pd_test_data.iloc[:, 2].isin([i])]))
 
 print('\n##########Time slots’ctr statistics##########')
 for budget_para in budget_paras:
