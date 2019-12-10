@@ -14,14 +14,14 @@ if not os.path.exists(data_type['campaign_id']):
 if not os.path.exists(log_path):
     os.mkdir(log_path)
 
-if not os.path.exists(log_path + '/result/'):
-    os.mkdir(log_path + '/result/')
+if not os.path.exists(log_path + '/result_reward_1/'):
+    os.mkdir(log_path + '/result_reward_1/')
 
-if not os.path.exists(log_path + '/result_profit/'):
-    os.mkdir(log_path + '/result_profit/')
+if not os.path.exists(log_path + '/result_reward_2/'):
+    os.mkdir(log_path + '/result_reward_2/')
 
-if not os.path.exists(log_path + '/result_adjust_reward/'):
-    os.mkdir(log_path + '/result_adjust_reward/')
+if not os.path.exists(log_path + '/result_reward_3/'):
+    os.mkdir(log_path + '/result_reward_3/')
 
 def setup_seed(seed):
     torch.manual_seed(seed)
