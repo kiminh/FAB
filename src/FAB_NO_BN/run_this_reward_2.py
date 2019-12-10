@@ -298,12 +298,12 @@ def run_env(budget_para):
 
         if (episode > 0) and ((episode + 1) % 10 == 0):
             actions_df = pd.DataFrame(data=actions)
-            actions_df.to_csv(log_path + '/result_profit/train_actions_' + str(budget_para) + '.csv')
+            actions_df.to_csv(log_path + '/result_reward_2/train_actions_' + str(budget_para) + '.csv')
 
             hour_clks = {'clks': e_clks, 'no_bid_clks': np.subtract(real_hour_clks, e_clks).tolist(),
                          'real_clks': real_hour_clks}
             hour_clks_df = pd.DataFrame(data=hour_clks)
-            hour_clks_df.to_csv(log_path + '/result_profit/train_hour_clks_' + str(budget_para) + '.csv')
+            hour_clks_df.to_csv(log_path + '/result_reward_2/train_hour_clks_' + str(budget_para) + '.csv')
             print(
                 'episode {}, reward={}, profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, td_error={}, action_loss={}\n'.format(
                     episode + 1, np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
@@ -315,15 +315,15 @@ def run_env(budget_para):
 
     e_results_df = pd.DataFrame(data=e_results, columns=['reward', 'profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                                          'break_time_slot', 'td_error', 'action_loss'])
-    e_results_df.to_csv(log_path + '/result_profit/train_episode_results_' + str(budget_para) + '.csv')
+    e_results_df.to_csv(log_path + '/result_reward_2/train_episode_results_' + str(budget_para) + '.csv')
 
     e_actions_df = pd.DataFrame(data=e_actions)
-    e_actions_df.to_csv(log_path + '/result_profit/test_episode_actions_' + str(budget_para) + '.csv')
+    e_actions_df.to_csv(log_path + '/result_reward_2/test_episode_actions_' + str(budget_para) + '.csv')
 
     test_records_df = pd.DataFrame(data=test_records,
                                    columns=['profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                             'break_time_slot'])
-    test_records_df.to_csv(log_path + '/result_profit/test_episode_results_' + str(budget_para) + '.csv')
+    test_records_df.to_csv(log_path + '/result_reward_2/test_episode_results_' + str(budget_para) + '.csv')
 
 
 def test_env(budget, budget_para, test_data, eCPC):
@@ -435,13 +435,13 @@ def test_env(budget, budget_para, test_data, eCPC):
     result_df = pd.DataFrame(data=results,
                              columns=['profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                       'break_time_slot'])
-    result_df.to_csv(log_path + '/result_profit/test_result_' + str(budget_para) + '.csv')
+    result_df.to_csv(log_path + '/result_reward_2/test_result_' + str(budget_para) + '.csv')
 
     test_actions_df = pd.DataFrame(data=actions)
-    test_actions_df.to_csv(log_path + '/result_profit/test_action_' + str(budget_para) + '.csv')
+    test_actions_df.to_csv(log_path + '/result_reward_2/test_action_' + str(budget_para) + '.csv')
 
     test_hour_clks_df = pd.DataFrame(data=hour_clks)
-    test_hour_clks_df.to_csv(log_path + '/result_profit/test_hour_clks_' + str(budget_para) + '.csv')
+    test_hour_clks_df.to_csv(log_path + '/result_reward_2/test_hour_clks_' + str(budget_para) + '.csv')
     print('profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, {}\n'.format(
         np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
         int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
