@@ -49,7 +49,7 @@ class DDPG():
 
         # 优化器
         self.optimizer_a = torch.optim.Adam(self.Actor.parameters(), lr=self.lr_A)
-        self.optimizer_c = torch.optim.Adam(self.Critic.parameters(), lr=self.lr_C, weight_decay=6e-3)
+        self.optimizer_c = torch.optim.Adam(self.Critic.parameters(), lr=self.lr_C, weight_decay=1e-3)
 
         self.loss_func = nn.MSELoss(reduction='mean')
 
