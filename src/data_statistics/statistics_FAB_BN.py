@@ -16,12 +16,12 @@ def test_env(directory, budget, budget_para, test_data, eCPC, actions):
 
     e_bids = np.array([])
     e_market_prices = np.array([])
-    e_hours = np.array([])
+    e_fractions = np.array([])
     e_real_labels = np.array([]) # 是否被点击
     e_ctrs = np.array([])
     # 状态包括：当前CTR，
     for t in range(data_type['fraction_type']):
-        auc_datas = test_data[test_data[:, config['data_hour_index']] == t]
+        auc_datas = test_data[test_data[:, config['data_fraction_index']] == t]
 
         if len(auc_datas) == 0:
             continue
@@ -32,7 +32,7 @@ def test_env(directory, budget, budget_para, test_data, eCPC, actions):
 
         ctrs = auc_datas[:, config['data_pctr_index']]
         market_prices = auc_datas[:, config['data_marketprice_index']]
-        hours = auc_datas[:, config['data_hour_index']]
+        fractions = auc_datas[:, config['data_fraction_index']]
         real_labels = auc_datas[:, config['data_clk_index']]
         win_auctions = auc_datas[bids >= auc_datas[:, config['data_marketprice_index']]]
 
@@ -54,7 +54,7 @@ def test_env(directory, budget, budget_para, test_data, eCPC, actions):
             bids = []
             market_prices = []
             ctrs = []
-            hours = []
+            fractions = []
             real_labels = []
             for i in range(len(auc_datas)):
                 if temp_cost >= (budget - np.sum(e_cost[:t])):
@@ -70,7 +70,7 @@ def test_env(directory, budget, budget_para, test_data, eCPC, actions):
                 bids.append(bid)
                 market_prices.append(temp_market_price)
                 ctrs.append(current_data[config['data_pctr_index']])
-                hours.append(current_data[config['data_hour_index']])
+                fractions.append(current_data[config['data_fraction_index']])
                 real_labels.append(temp_clk)
                 if bid >= temp_market_price:
                     e_clks[t] += temp_clk
@@ -83,7 +83,7 @@ def test_env(directory, budget, budget_para, test_data, eCPC, actions):
         e_bids = np.hstack((e_bids, bids))
         e_ctrs = np.hstack((e_ctrs, ctrs))
         e_market_prices = np.hstack((e_market_prices, market_prices))
-        e_hours = np.hstack((e_hours, hours))
+        e_fractions = np.hstack((e_fractions, fractions))
         e_real_labels = np.hstack((e_real_labels, real_labels))
         if np.sum(e_cost) >= budget:
             break
@@ -92,7 +92,7 @@ def test_env(directory, budget, budget_para, test_data, eCPC, actions):
     print(bid_nums)
     print(e_clks, np.sum(e_clks))
 
-    records = {'bids': e_bids.tolist(), 'market_prices':e_market_prices.tolist(), 'clks': e_real_labels, 'hours': e_hours, 'ctrs': e_ctrs}
+    records = {'bids': e_bids.tolist(), 'market_prices':e_market_prices.tolist(), 'clks': e_real_labels, 'fractions': e_fractions, 'ctrs': e_ctrs}
     records_df = pd.DataFrame(data=records)
     records_df.to_csv(directory + '/bids_' + str(budget_para) + '.csv', index=None)
 
@@ -160,7 +160,7 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
         float)
     test_data.iloc[:, config['data_fraction_index']] \
         = test_data.iloc[:, config['data_fraction_index']].astype(
-        float)
+        int)
     pd_test_data = test_data
     test_data = test_data.values
 
@@ -173,7 +173,7 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
         float)
     train_data.iloc[:, config['data_fraction_index']] \
         = train_data.iloc[:, config['data_fraction_index']].astype(
-        float)
+        int)
 
     # budget = np.sum(test_data[:, 2]) * budget_para
     budget = 32000000
@@ -198,57 +198,57 @@ def list_metrics(test_data, budget_para, result_directory):
 
     # budget = np.sum(test_data.iloc[:, 2]) * budget_para
     budget = 32000000
-    hour_clk_records = []
-    hour_cost_records = []
-    hour_cpc_records = []
-    hour_imp_records = []
-    hour_bid_nums_records = []
-    for hour_clip in range(data_type['fraction_type']):
-        hour_records = bid_records[bid_records.iloc[:, 3].isin([hour_clip])]
-        hour_records = hour_records.values
+    fraction_clk_records = []
+    fraction_cost_records = []
+    fraction_cpc_records = []
+    fraction_imp_records = []
+    fraction_bid_nums_records = []
+    for fraction_clip in range(data_type['fraction_type']):
+        fraction_records = bid_records[bid_records.iloc[:, 3].isin([fraction_clip])]
+        fraction_records = fraction_records.values
 
-        win_records = hour_records[hour_records[:, 0] >= hour_records[:, 1]]
+        win_records = fraction_records[fraction_records[:, 0] >= fraction_records[:, 1]]
 
-        hour_bid_nums = len(hour_records)
-        hour_clks = np.sum(win_records[:, 2])
-        hour_costs = np.sum(win_records[:, 1])
-        hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
-        hour_imps = len(win_records)
+        fraction_bid_nums = len(fraction_records)
+        fraction_clks = np.sum(win_records[:, 2])
+        fraction_costs = np.sum(win_records[:, 1])
+        fraction_cpc = fraction_costs / fraction_clks if fraction_clks > 0 else 0
+        fraction_imps = len(win_records)
 
-        if np.sum(hour_cost_records) >= budget:
-            hour_bid_nums = 0
-            hour_clks = 0
-            hour_costs = 0
-            hour_imps = 0
+        if np.sum(fraction_cost_records) >= budget:
+            fraction_bid_nums = 0
+            fraction_clks = 0
+            fraction_costs = 0
+            fraction_imps = 0
 
-            for i in range(len(hour_records)):
-                if np.sum(hour_cost_records) >= budget:
+            for i in range(len(fraction_records)):
+                if np.sum(fraction_cost_records) >= budget:
                     break
-                hour_bid_nums += 1
-                if hour_records[i, 0] >= hour_records[i, 1]:
-                    hour_clks += hour_records[:, 2]
-                    hour_costs += hour_records[:, 1]
-                    hour_imps += 1
+                fraction_bid_nums += 1
+                if fraction_records[i, 0] >= fraction_records[i, 1]:
+                    fraction_clks += fraction_records[:, 2]
+                    fraction_costs += fraction_records[:, 1]
+                    fraction_imps += 1
 
-            hour_cpc = hour_costs / hour_clks if hour_clks > 0 else 0
+            fraction_cpc = fraction_costs / fraction_clks if fraction_clks > 0 else 0
 
-        hour_bid_nums_records.append(hour_bid_nums)
-        hour_clk_records.append(hour_clks)
-        hour_cost_records.append(hour_costs)
-        hour_cpc_records.append(hour_cpc)
-        hour_imp_records.append(hour_imps)
+        fraction_bid_nums_records.append(fraction_bid_nums)
+        fraction_clk_records.append(fraction_clks)
+        fraction_cost_records.append(fraction_costs)
+        fraction_cpc_records.append(fraction_cpc)
+        fraction_imp_records.append(fraction_imps)
 
-    print(hour_clk_records)
-    print(hour_cost_records)
-    print(hour_cpc_records)
-    print(hour_imp_records)
-    print(hour_bid_nums_records)
+    print(fraction_clk_records)
+    print(fraction_cost_records)
+    print(fraction_cpc_records)
+    print(fraction_imp_records)
+    print(fraction_bid_nums_records)
 
-    records = [hour_clk_records, hour_cost_records, hour_cpc_records, hour_imp_records, hour_bid_nums_records]
+    records = [fraction_clk_records, fraction_cost_records, fraction_cpc_records, fraction_imp_records, fraction_bid_nums_records]
 
     for k in range(5):
         current_str = ''
-        for m in range(len(hour_clk_records)):
+        for m in range(len(fraction_clk_records)):
             current_str = current_str + str(records[k][m]) + '\t'
 
         print(current_str)
@@ -312,24 +312,26 @@ def clk_frequency(test_data, budget_para, result_directory):
     real_labels = []
     for i in range(data_type['fraction_type']):
         real_labels.append(
-            np.sum(test_data[test_data.iloc[:, config['data_hour_index']].isin([i])].iloc[:, config['data_clk_index']]))
+            np.sum(test_data[test_data.iloc[:, config['data_fraction_index']].isin([i])].iloc[:, config['data_clk_index']]))
     print(real_labels)
 
     bid_records = pd.read_csv(result_directory + '/bids_' + str(budget_para) + '.csv', header=None).drop([0])
+
     bid_records.iloc[:, 0] = bid_records.iloc[:, 0].astype(float)
     bid_records.iloc[:, 0] = np.ceil(bid_records.iloc[:, 0].values) # 向下取整
     bid_records.iloc[:, 0] = bid_records.iloc[:, 0].astype(int)
     bid_records.iloc[:, 1:4] = bid_records.iloc[:, 1:4].astype(int)
 
+
     record_clk_indexs = [300]
-    hour_appear_arrays = bid_records[bid_records.iloc[:, 0].isin(record_clk_indexs)].iloc[:, 3]
+    fraction_appear_arrays = bid_records[bid_records.iloc[:, 0].isin(record_clk_indexs)].iloc[:, 3]
     is_in_indexs = bid_records[bid_records.iloc[:, 0].isin(record_clk_indexs)].iloc[:, 3].unique() # 有哪些时段出现了record_clk_index
     index_dicts = {}
     for index in is_in_indexs:
         index_dicts.setdefault(index, 0)
 
-    for hour_appear in hour_appear_arrays.values:
-        index_dicts[hour_appear] += 1
+    for fraction_appear in fraction_appear_arrays.values:
+        index_dicts[fraction_appear] += 1
 
     print('点击最多的时段排序')
     sort_clk_index = np.argsort(-np.array(real_labels))  # 降序排列

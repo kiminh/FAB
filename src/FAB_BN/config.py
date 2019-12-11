@@ -23,7 +23,7 @@ config = {
     'neuron_nums_a_2': 20,
     'GPU_fraction': 1,
     'learn_iter': data_type['fraction_type'],
-    'observation_size': data_type['fraction_type'] * 10,
+    'observation_episode': 10,
     'memory_size': 1000000,
-    'batch_size': 32, # GPU对2的幂次的batch可以发挥更佳的性能，因此设置成16、32、64、128...时往往要比设置为整10、整100的倍数时表现更优
+    'batch_size': 128, # GPU对2的幂次的batch可以发挥更佳的性能，因此设置成16、32、64、128...时往往要比设置为整10、整100的倍数时表现更优
 }

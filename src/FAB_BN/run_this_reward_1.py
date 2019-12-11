@@ -31,35 +31,38 @@ def choose_eCPC(campaign, original_ctr):
     return eCPC
 
 # 奖励函数type1
-def adjust_reward(e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
+def adjust_reward(auc_len, e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
                   e_lose_imp_with_clk_value,
                   e_clk_aucs,
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t):
-    reward_degree = 1 - np.mean(np.true_divide(np.subtract(bids_t, market_prices_t), bids_t))
-    reward_win_imp_with_clk = (e_win_imp_with_clk_value[t] / e_true_value[t]) * reward_degree
-    reward_win_imp_with_clk = reward_win_imp_with_clk if e_true_value[t] > 0 else 0
+    if auc_len > 0:
+        reward_degree = np.mean(np.true_divide(np.subtract(bids_t, market_prices_t), bids_t))
+        reward_win_imp_with_clk = (e_win_imp_with_clk_value[t] / e_true_value[t]) / reward_degree
+        reward_win_imp_with_clk = reward_win_imp_with_clk if e_true_value[t] > 0 else 0
 
-    remain_budget = (budget - np.sum(e_cost[:t+1])) / budget
-    remain_budget = remain_budget if remain_budget > 0 else 1e-1 # 1e-1防止出现除0错误
-    remain_clks = (total_clks - np.sum(real_clks[:t+1])) / total_clks
-    punish_win_rate = remain_clks / remain_budget
-    reward_win_imp_without_clk = - e_win_imp_without_clk_cost[t] * punish_win_rate / e_cost[t]
+        remain_budget = (budget - np.sum(e_cost[:t+1])) / budget
+        remain_budget = remain_budget if remain_budget > 0 else 1e-1 # 1e-1防止出现除0错误
+        remain_clks = (total_clks - np.sum(real_clks[:t+1])) / total_clks
+        punish_win_rate = remain_clks / remain_budget
+        reward_win_imp_without_clk = - e_win_imp_without_clk_cost[t] * punish_win_rate / e_cost[t] if e_cost[t] > 0 else 0
 
-    temp_rate = (e_clk_no_win_aucs[t] / e_clk_aucs[t]) if e_clk_aucs[t] > 0 else 1
-    punish_no_win_clk_rate = 1 - temp_rate if temp_rate != 1 else 1
-    base_punishment = - e_lose_imp_with_clk_value[t] / e_miss_true_value[t] if e_miss_true_value[t] > 0 else 0
-    reward_lose_imp_with_clk = base_punishment / punish_no_win_clk_rate
+        temp_rate = (e_clk_no_win_aucs[t] / e_clk_aucs[t]) if e_clk_aucs[t] > 0 else 1
+        punish_no_win_clk_rate = 1 - temp_rate if temp_rate != 1 else 1
+        base_punishment = - e_lose_imp_with_clk_value[t] / e_miss_true_value[t] if e_miss_true_value[t] > 0 else 0
+        reward_lose_imp_with_clk = base_punishment / punish_no_win_clk_rate
 
-    base_encourage = e_lose_imp_without_clk_cost[t] / no_win_imps_market_prices_t if no_win_imps_market_prices_t > 0 else 0
-    encourage_rate = e_no_clk_no_win_aucs[t] / e_no_clk_aucs[t] if e_no_clk_aucs[t] > 0 else 0
-    reward_lose_imp_without_clk = base_encourage * encourage_rate if encourage_rate > 0 else 1
+        base_encourage = e_lose_imp_without_clk_cost[t] / no_win_imps_market_prices_t if no_win_imps_market_prices_t > 0 else 0
+        encourage_rate = e_no_clk_no_win_aucs[t] / e_no_clk_aucs[t] if e_no_clk_aucs[t] > 0 else 0
+        reward_lose_imp_without_clk = base_encourage * encourage_rate if encourage_rate > 0 else 0
 
-    reward_positive = reward_win_imp_with_clk + reward_lose_imp_without_clk
-    reward_negative = reward_win_imp_without_clk + reward_lose_imp_with_clk
+        reward_positive = reward_win_imp_with_clk + reward_lose_imp_without_clk
+        reward_negative = reward_win_imp_without_clk + reward_lose_imp_with_clk
 
-    reward_t = reward_positive + reward_negative
+        reward_t = reward_positive + reward_negative
+    else:
+        reward_t = 0
 
-    n = 1e5 # 奖励函数type1的缩放因子
+    n = 1e3 # 奖励函数type1的缩放因子
 
     return reward_t / n
 
@@ -150,12 +153,11 @@ def run_env(budget_para):
         # 状态包括：当前CTR，
         for t in range(fraction_type):
             auc_datas = train_data[train_data[:, config['data_fraction_index']] == t]
-            if len(auc_datas) == 0:
-                continue
 
             if t == 0:
                 state = np.array([1, 0, 0, 0])  # current_time_slot, budget_left_ratio, cost_t_ratio, ctr_t, win_rate_t
                 action = RL.choose_action(state)
+                print(action)
                 action = np.clip(action + ou_noise()[0] * exploration_rate, -0.99, 0.99)
                 init_action = action
                 bids = auc_datas[:, config['data_pctr_index']] * eCPC / (1 + init_action)
@@ -296,7 +298,7 @@ def run_env(budget_para):
             action_ = np.clip(action_ + ou_noise()[0] * exploration_rate, -0.99, 0.99)
             next_action = action_
 
-            reward_t = adjust_reward(e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
+            reward_t = adjust_reward(len(auc_datas), e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
                   e_lose_imp_with_clk_value,
                   e_clk_aucs,
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t)
@@ -308,7 +310,7 @@ def run_env(budget_para):
             # 在原始论文中，每感知一次环境就要对模型进行一次训练
             # 然而频繁地学习在未充分感知环境的情况下，会使模型陷入局部（当前）最优
             # 因此可以每感知N次再对模型训练n次，这样会使得模型更稳定，并加快学习速度
-            if RL.memory_counter % config['observation_size'] == 0:
+            if (episode + 1) % config['observation_episode'] == 0:
                 is_learn = True
                 exploration_rate *= 0.999
             if is_learn: # after observing config['observation_size'] times, for config['learn_iter'] learning time
@@ -319,23 +321,20 @@ def run_env(budget_para):
                     RL.soft_update(RL.Critic, RL.Critic_)
                     if m == config['learn_iter'] - 1:
                         is_learn = False
+
             if np.sum(e_cost) >= budget:
                 break
 
-        e_result = [np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)), int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
-                    np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, td_error, action_loss]
-        e_results.append(e_result)
-
         if (episode > 0) and ((episode + 1) % 10 == 0):
             actions_df = pd.DataFrame(data=actions)
-            actions_df.to_csv(log_path + '/result_reward_1/train_actions_' + str(budget_para) + '.csv')
+            actions_df.to_csv(log_path + '/result_reward_2/train_actions_' + str(budget_para) + '.csv')
 
             hour_clks = {'clks': e_clks, 'no_bid_clks': np.subtract(real_hour_clks, e_clks).tolist(),
                          'real_clks': real_hour_clks}
             hour_clks_df = pd.DataFrame(data=hour_clks)
-            hour_clks_df.to_csv(log_path + '/result_reward_1/train_hour_clks_' + str(budget_para) + '.csv')
-            print(
-                'episode {}, reward={}, profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, td_error={}, action_loss={}\n'.format(
+            hour_clks_df.to_csv(log_path + '/result_reward_2/train_hour_clks_' + str(budget_para) + '.csv')
+            print('episode {}, reward={}, profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, '
+                  'imps={}, cpm={}, break_time_slot={}, td_error={}, action_loss={}\n'.format(
                     episode + 1, np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
                     int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
                     np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, td_error, action_loss))
@@ -382,8 +381,6 @@ def test_env(budget, budget_para, test_data, eCPC):
     # 状态包括：当前CTR，
     for t in range(fraction_type):
         auc_datas = test_data[test_data[:, config['data_fraction_index']] == t]
-        if len(auc_datas) == 0:
-            continue
 
         if t == 0:
             state = np.array([1, 0, 0, 0])  # current_time_slot, budget_left_ratio, cost_t_ratio, ctr_t, win_rate_t
