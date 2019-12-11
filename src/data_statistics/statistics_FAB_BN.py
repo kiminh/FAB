@@ -109,10 +109,9 @@ def max_train_index(directory, para):
         test_clk_temp = [test_clks[i, 1] for k in range(10)]
         new_test_clks.append(test_clk_temp)
 
-        test_temp = [test_results[i, [0, 3, 4, 6, 7, 8]].tolist() for m in range(10)]
-        new_test_results.append(test_temp)
+        new_test_results.append(test_results[i, [0, 3, 4, 6, 7, 8]].tolist())
 
-    new_test_results = np.array(new_test_results).reshape(50000, 6)
+    new_test_results = np.array(new_test_results)
     extend_test_clks = np.array(new_test_clks).flatten()
 
     max_value = train_clks[train_clks[:, 1].argsort()][-1, 1]

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import random
-from src.FAB_BN.Actor_Critic import Actor, Critic
+from src.FAB_NO_BN.Actor_Critic import Actor, Critic
 
 def setup_seed(seed):
     torch.manual_seed(seed)
@@ -25,6 +25,7 @@ class DDPG():
             memory_size,
             batch_size = 32,
             tau = 0.001, # for target network soft update
+            device = 'cuda:0',
     ):
         self.feature_numbers = feature_nums
         self.action_numbers = action_nums
@@ -34,20 +35,21 @@ class DDPG():
         self.memory_size = memory_size
         self.batch_size = batch_size
         self.tau = tau
+        self.device = device
 
         if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
         self.memory = np.zeros((self.memory_size, self.feature_numbers * 2 + self.action_numbers + 1))
 
-        self.Actor = Actor(self.feature_numbers, self.action_numbers)
-        self.Critic = Critic(self.feature_numbers, self.action_numbers)
+        self.Actor = Actor(self.feature_numbers, self.action_numbers).to(self.device)
+        self.Critic = Critic(self.feature_numbers, self.action_numbers).to(self.device)
 
-        self.Actor_ = Actor(self.feature_numbers, self.action_numbers)
-        self.Critic_ = Critic(self.feature_numbers, self.action_numbers)
+        self.Actor_ = Actor(self.feature_numbers, self.action_numbers).to(self.device)
+        self.Critic_ = Critic(self.feature_numbers, self.action_numbers).to(self.device)
 
         # 优化器
-        self.optimizer_a = torch.optim.Adam(self.Actor.parameters(), lr=self.lr_A)
-        self.optimizer_c = torch.optim.Adam(self.Critic.parameters(), lr=self.lr_C, weight_decay=1e-2)
+        self.optimizer_a = torch.optim.Adam(self.Actor.parameters(), lr=self.lr_A, weight_decay=6e-5)
+        self.optimizer_c = torch.optim.Adam(self.Critic.parameters(), lr=self.lr_C, weight_decay=6e-5)
 
         self.loss_func = nn.MSELoss(reduction='mean')
 
@@ -58,10 +60,10 @@ class DDPG():
         self.memory_counter += 1
 
     def choose_action(self, state, ):
-        state = torch.unsqueeze(torch.FloatTensor(state), 0)
+        state = torch.unsqueeze(torch.FloatTensor(state), 0).to(self.device)
         self.Actor.eval()
         with torch.no_grad():
-            action = self.Actor.forward(state).numpy()[0][0]
+            action = self.Actor.forward(state).cpu().numpy()[0][0]
         self.Actor.train()
 
         return action
@@ -75,17 +77,17 @@ class DDPG():
             # replacement 代表的意思是抽样之后还放不放回去，如果是False的话，那么出来的三个数都不一样，如果是True的话， 有可能会出现重复的，因为前面的抽的放回去了
             sample_index = np.random.choice(self.memory_size, size=self.batch_size, replace=False)
         else:
-            sample_index = np.random.choice(self.memory_counter, size=self.batch_size, replace=False)
+            sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
 
         batch_memory = self.memory[sample_index, :]
 
-        b_s = torch.FloatTensor(batch_memory[:, :self.feature_numbers])
-        b_a = torch.FloatTensor(batch_memory[:, self.feature_numbers: self.feature_numbers + self.action_numbers])
-        b_r = torch.FloatTensor(batch_memory[:, -self.feature_numbers - 1: -self.feature_numbers])
-        b_s_ = torch.FloatTensor(batch_memory[:, -self.feature_numbers:])
+        b_s = torch.FloatTensor(batch_memory[:, :self.feature_numbers]).to(self.device)
+        b_a = torch.FloatTensor(batch_memory[:, self.feature_numbers: self.feature_numbers + self.action_numbers]).to(self.device)
+        b_r = torch.FloatTensor(batch_memory[:, -self.feature_numbers - 1: -self.feature_numbers]).to(self.device)
+        b_s_ = torch.FloatTensor(batch_memory[:, -self.feature_numbers:]).to(self.device)
 
-        q_target = b_r + self.gamma * self.Critic_.forward(b_s_, self.Actor_(b_s_))
-        q = self.Critic.forward(b_s, b_a)
+        q_target = b_r + self.gamma * self.Critic_.forward(b_s_, self.Actor_(b_s_)).to(self.device)
+        q = self.Critic.forward(b_s, b_a).to(self.device)
         td_error = F.smooth_l1_loss(q, q_target.detach())
         self.optimizer_c.zero_grad()
         td_error.backward()
@@ -96,8 +98,8 @@ class DDPG():
         a_loss.backward()
         self.optimizer_a.step()
 
-        td_error_r = td_error.detach().numpy()
-        a_loss_r = a_loss.detach().numpy()
+        td_error_r = td_error.item()
+        a_loss_r = a_loss.item()
         return td_error_r, a_loss_r
 
     # 只存储获得最优收益（点击）那一轮的参数

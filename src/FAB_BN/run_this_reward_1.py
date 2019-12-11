@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import datetime
-import os
 from src.FAB_BN.config import config
 from src.data_type import config as data_type
 from src.FAB_BN.RL_brain import DDPG, OrnsteinUhlenbeckNoise
@@ -28,13 +27,13 @@ def choose_eCPC(campaign, original_ctr):
     return eCPC
 
 # 奖励函数type1
-def adjust_reward(auc_len, e_true_value, e_miss_true_value, bids_t, market_prices_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
+def adjust_reward(auc_len, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
                   e_lose_imp_with_clk_value,
                   e_clk_aucs,
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t):
     if auc_len > 0:
-        reward_degree = np.mean(np.true_divide(np.subtract(bids_t, market_prices_t), bids_t))
-        reward_win_imp_with_clk = (e_win_imp_with_clk_value[t] / e_true_value[t]) / reward_degree
+        reward_degree = np.mean(np.true_divide(np.subtract(bid_win_t, market_price_win_t), bid_win_t))
+        reward_win_imp_with_clk = (e_win_imp_with_clk_value[t] / e_true_value[t]) / reward_degree if reward_degree > 0 else 1e3
         reward_win_imp_with_clk = reward_win_imp_with_clk if e_true_value[t] > 0 else 0
 
         remain_budget = (budget - np.sum(e_cost[:t+1])) / budget
@@ -317,7 +316,7 @@ def run_env(budget_para):
             # 然而频繁地学习在未充分感知环境的情况下，会使模型陷入局部（当前）最优
             # 因此可以每感知N次再对模型训练n次，这样会使得模型更稳定，并加快学习速度
             is_learn = True
-            exploration_rate *= 0.995
+            exploration_rate *= 0.999
             if is_learn:  # after observing config['observation_size'] times, for config['learn_iter'] learning time
                 for m in range(config['learn_iter']):
                     td_e, a_loss = RL.learn()
