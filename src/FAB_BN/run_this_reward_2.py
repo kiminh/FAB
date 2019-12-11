@@ -28,8 +28,8 @@ def choose_eCPC(campaign, original_ctr):
 
 # 奖励函数type2
 def adjust_reward(e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_lose_imp_with_clk_value, e_clk_aucs, e_clk_no_win_aucs, t):
-    reward_degree = 1 - np.mean(np.true_divide(np.subtract(bid_win_t, market_price_win_t), bid_win_t))
-    reward_win_imp_with_clk = (e_win_imp_with_clk_value[t] / e_true_value[t]) * reward_degree
+    reward_degree = np.mean(np.true_divide(np.subtract(bid_win_t, market_price_win_t), bid_win_t))
+    reward_win_imp_with_clk = (e_win_imp_with_clk_value[t] / e_true_value[t]) / reward_degree
     reward_win_imp_with_clk = reward_win_imp_with_clk if e_true_value[t] > 0 else 0
 
     temp_rate = (e_clk_no_win_aucs[t] / e_clk_aucs[t]) if e_clk_aucs[t] > 0 else 1
