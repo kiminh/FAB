@@ -43,6 +43,9 @@ class Actor(nn.Module):
         self.fc1 = nn.Linear(feature_numbers, neural_nums_a_1)
         self.fc2 = nn.Linear(neural_nums_a_1, neural_nums_a_2)
         self.out = nn.Linear(neural_nums_a_2, action_numbers)
+        nn.init.xavier_normal_(self.fc1.weight.data)
+        nn.init.xavier_normal_(self.fc2.weight.data)
+        nn.init.xavier_normal_(self.out.weight.data)
 
         self.batch_norm_input = nn.BatchNorm1d(feature_numbers,
                      eps=1e-05,
@@ -82,6 +85,10 @@ class Critic(nn.Module):
         self.fc_a = nn.Linear(action_numbers, neural_nums_c_1)
         self.fc_q = nn.Linear(2 * neural_nums_c_1, neural_nums_c_2)
         self.fc_ = nn.Linear(neural_nums_c_2, action_numbers)
+        nn.init.xavier_normal_(self.fc_s.weight.data)
+        nn.init.xavier_normal_(self.fc_a.weight.data)
+        nn.init.xavier_normal_(self.fc_q.weight.data)
+        nn.init.xavier_normal_(self.fc_.weight.data)
 
         self.batch_norm_input = nn.BatchNorm1d(feature_numbers,
                                                eps=1e-05,

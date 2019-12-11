@@ -3,10 +3,7 @@ import numpy as np
 import datetime
 from src.FAB_BN.config import config
 from src.data_type import config as data_type
-if data_type['is_gpu'] == 0:
-    from src.FAB_BN.RL_brain_cpu import DDPG, OrnsteinUhlenbeckNoise
-else:
-    from src.FAB_BN.RL_brain_gpu import DDPG, OrnsteinUhlenbeckNoise
+from src.FAB_BN.RL_brain import DDPG, OrnsteinUhlenbeckNoise
 
 # 由启发式算法得到的eCPC
 def choose_eCPC(campaign, original_ctr):
@@ -275,13 +272,22 @@ def run_env(budget_para):
             transition = np.hstack((state.tolist(), action, reward, state_.tolist()))
             RL.store_transition(transition)
 
+            if np.sum(e_cost) >= budget:
+                break
+
+        if (episode > 0) and ((episode + 1) % config['observation_episode'] == 0):
+            e_result = [np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
+                        int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
+                        np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, td_error,
+                        action_loss]
+            e_results.append(e_result)
+
             # 在原始论文中，每感知一次环境就要对模型进行一次训练
             # 然而频繁地学习在未充分感知环境的情况下，会使模型陷入局部（当前）最优
             # 因此可以每感知N次再对模型训练n次，这样会使得模型更稳定，并加快学习速度
-            if RL.memory_counter % config['observation_size'] == 0:
-                is_learn = True
-                exploration_rate *= 0.999
-            if is_learn: # after observing config['observation_size'] times, for config['learn_iter'] learning time
+            is_learn = True
+            exploration_rate *= 0.995
+            if is_learn:  # after observing config['observation_size'] times, for config['learn_iter'] learning time
                 for m in range(config['learn_iter']):
                     td_e, a_loss = RL.learn()
                     td_error, action_loss = td_e, a_loss
@@ -289,23 +295,16 @@ def run_env(budget_para):
                     RL.soft_update(RL.Critic, RL.Critic_)
                     if m == config['learn_iter'] - 1:
                         is_learn = False
-            if np.sum(e_cost) >= budget:
-                break
 
-        e_result = [np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)), int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
-                    np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, td_error, action_loss]
-        e_results.append(e_result)
-
-        if (episode > 0) and ((episode + 1) % 10 == 0):
             actions_df = pd.DataFrame(data=actions)
-            actions_df.to_csv(log_path + '/result_reward_2/train_actions_' + str(budget_para) + '.csv')
+            actions_df.to_csv(log_path + '/result_reward_1/train_actions_' + str(budget_para) + '.csv')
 
             hour_clks = {'clks': e_clks, 'no_bid_clks': np.subtract(real_hour_clks, e_clks).tolist(),
                          'real_clks': real_hour_clks}
             hour_clks_df = pd.DataFrame(data=hour_clks)
-            hour_clks_df.to_csv(log_path + '/result_reward_2/train_hour_clks_' + str(budget_para) + '.csv')
-            print(
-                'episode {}, reward={}, profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, td_error={}, action_loss={}\n'.format(
+            hour_clks_df.to_csv(log_path + '/result_reward_1/train_hour_clks_' + str(budget_para) + '.csv')
+            print('episode {}, reward={}, profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, '
+                  'imps={}, cpm={}, break_time_slot={}, td_error={}, action_loss={}\n'.format(
                     episode + 1, np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
                     int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
                     np.sum(e_cost) / np.sum(imps) if np.sum(imps) > 0 else 0, break_time_slot, td_error, action_loss))
@@ -462,6 +461,7 @@ if __name__ == '__main__':
         memory_size=config['memory_size'],
         batch_size=config['batch_size'],
         tau=config['tau'],  # for target network soft update
+        device=config['device'],
     )
 
     budget_para = config['budget_para']

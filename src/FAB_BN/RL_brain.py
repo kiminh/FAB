@@ -48,8 +48,8 @@ class DDPG():
         self.Critic_ = Critic(self.feature_numbers, self.action_numbers).to(self.device)
 
         # 优化器
-        self.optimizer_a = torch.optim.Adam(self.Actor.parameters(), lr=self.lr_A, weight_decay=1e-2)
-        self.optimizer_c = torch.optim.Adam(self.Critic.parameters(), lr=self.lr_C, weight_decay=1e-2)
+        self.optimizer_a = torch.optim.Adam(self.Actor.parameters(), lr=self.lr_A, weight_decay=6e-5)
+        self.optimizer_c = torch.optim.Adam(self.Critic.parameters(), lr=self.lr_C, weight_decay=6e-5)
 
         self.loss_func = nn.MSELoss(reduction='mean')
 
@@ -77,7 +77,7 @@ class DDPG():
             # replacement 代表的意思是抽样之后还放不放回去，如果是False的话，那么出来的三个数都不一样，如果是True的话， 有可能会出现重复的，因为前面的抽的放回去了
             sample_index = np.random.choice(self.memory_size, size=self.batch_size, replace=False)
         else:
-            sample_index = np.random.choice(self.memory_counter, size=self.batch_size, replace=False)
+            sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
 
         batch_memory = self.memory[sample_index, :]
 
