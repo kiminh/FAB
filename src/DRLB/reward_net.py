@@ -72,7 +72,7 @@ class RewardNet:
         self.model_reward, self.real_reward = Net(self.feature_numbers, self.reward_numbers).to(self.device), Net(self.feature_numbers, self.reward_numbers).to(self.device)
 
         # 优化器
-        self.optimizer = torch.optim.RMSprop(self.model_reward.parameters(), lr=self.lr, alpha=0.95)
+        self.optimizer = torch.optim.Adam(self.model_reward.parameters(), lr=self.lr, weight_decay=1e-3)
         # 损失函数为，均方损失函数
         self.loss_func = nn.MSELoss()
 
