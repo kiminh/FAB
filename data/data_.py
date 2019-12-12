@@ -160,9 +160,9 @@ def all_sample(campaign_id):
     test_data = pd.read_csv(campaign_id + str(fraction_type) + '/test_data.csv')
 
     if campaign_id == '1458':
-        sample_rate = 1 - (356549 / len(test_data)) # 选择某几行删除
+        sample_rate = 1 - (300000 / len(test_data)) # 选择某几行删除
     else:
-        sample_rate =  1- (355530 / len(test_data))
+        sample_rate =  1- (300000 / len(test_data))
 
     sample_test_data = np.array([[]])
     for i in range(24):
@@ -188,9 +188,9 @@ def train_sample(campaign_id):
     train_data = pd.read_csv(campaign_id + str(fraction_type) + '/train_data.csv')
 
     if campaign_id == '1458':
-        sample_rate = 1 - (356549 / len(train_data)) # 选择某几行删除
+        sample_rate = 1 - (300000 / len(train_data)) # 选择某几行删除
     else:
-        sample_rate =  1- (355530 / len(train_data))
+        sample_rate =  1- (300000 / len(train_data))
 
     sample_test_data = np.array([[]])
     for i in range(24):
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     type = data_type['type'] # down sample - sample; no sample - data
     fraction_type = data_type['fraction_type']
 
-    sample_type = 1 # 1 - down sample; 2 - all sample; 3 - train sample
+    sample_type = 3 # 1 - down sample; 2 - all sample; 3 - train sample
     print('######Generate Train and Test Datas######\n')
     test_clks, test_auc_nums = generate_data(campaign_id, fraction_type)
 

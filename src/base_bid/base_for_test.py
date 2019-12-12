@@ -109,42 +109,42 @@ if __name__ == '__main__':
         os.mkdir('result/' + data_type['campaign_id'] + data_type['type'])
 
     # 从训练数据中读取到初始ecpc和初始ctr
-    train_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + '/train_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
-    train_data.iloc[:, 1: 4] \
-            = train_data.iloc[:, 1 : 4].astype(
+    train_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + str(data_type['fraction_type']) + '/train_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
+    train_data.iloc[:, 0: 3] \
+            = train_data.iloc[:, 0 : 3].astype(
             int)
-    train_data.iloc[:, 4] \
-        = train_data.iloc[:, 4].astype(
+    train_data.iloc[:, 3] \
+        = train_data.iloc[:, 3].astype(
         float)
     imp_num = len(train_data.values)
-    original_ctr = np.sum(train_data.values[:, 1]) / imp_num
-    original_ecpc = np.sum(train_data.values[:, 2]) / np.sum(train_data.values[:, 1])
+    original_ctr = np.sum(train_data.values[:, 0]) / imp_num
+    original_ecpc = np.sum(train_data.values[:, 1]) / np.sum(train_data.values[:, 0])
 
-    avg_market_price = np.sum(train_data.values[:, 2]) / imp_num
-    original_pctr = np.sum(train_data.values[:, 4]) / imp_num
+    avg_market_price = np.sum(train_data.values[:, 1]) / imp_num
+    original_pctr = np.sum(train_data.values[:, 3]) / imp_num
 
     bidding_opt_c = fit_c(train_data)
 
     clicks_prices = [] # clk and price
     total_cost = 0 # total original cost during the test data
     # 从测试数据中读取测试数据
-    test_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + 'test_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
-    test_data.iloc[:, 1: 4] \
-            = test_data.iloc[:, 1 : 4].astype(
+    test_data = pd.read_csv(data_type['data_path'] + data_type['campaign_id'] + str(data_type['fraction_type']) + '/test_' + data_type['type'] + '.csv', header=None).drop(0, axis=0)
+    test_data.iloc[:, 0: 3] \
+            = test_data.iloc[:, 0 : 3].astype(
             int)
-    test_data.iloc[:, 4] \
-        = test_data.iloc[:, 4].astype(
+    test_data.iloc[:, 3] \
+        = test_data.iloc[:, 3].astype(
         float)
     data = test_data.values
     for i in range(len(data)):
-        click = int(data[i][1])
-        winning_price = int(data[i][2])
-        clicks_prices.append((click, winning_price, int(data[i][3])))
+        click = int(data[i][0])
+        winning_price = int(data[i][1])
+        clicks_prices.append((click, winning_price, int(data[i][5])))
 
     # total_cost += test_data.iloc[:, 2].sum()
     total_cost += 32000000
     print('总预算{}'.format(total_cost))
-    pctrs = test_data.values[:, 4].flatten().tolist()
+    pctrs = test_data.values[:, 3].flatten().tolist()
 
     # parameters setting for each bidding strategy
     budget_proportions = [2, 4, 8, 16]
