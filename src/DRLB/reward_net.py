@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -36,6 +35,7 @@ class Net(nn.Module):
         x_2 = self.fc2(x_1)
         x_2 = F.relu(x_2)
         actions_value = self.out(x_2)
+
         return actions_value
 
 class RewardNet:
@@ -47,6 +47,7 @@ class RewardNet:
         learning_rate = 0.01,
         memory_size = 500,
         batch_size = 32,
+        device = 'cuda:0',
     ):
         self.action_space = action_space
         self.reward_numbers = reward_numbers
@@ -54,6 +55,7 @@ class RewardNet:
         self.lr = learning_rate
         self.memory_size = memory_size
         self.batch_size = batch_size
+        self.device = device
 
         if not hasattr(self, 'memory_S_counter'):
             self.memory_S_counter = 0
@@ -67,18 +69,19 @@ class RewardNet:
         # 将经验池<状态-动作-累积奖励中最大>中的转换组初始化为0
         self.memory_D2 = np.zeros((self.memory_size, self.feature_numbers + 2))
 
-        self.model_reward, self.real_reward = Net(self.feature_numbers, self.reward_numbers), Net(self.feature_numbers, self.reward_numbers)
+        self.model_reward, self.real_reward = Net(self.feature_numbers, self.reward_numbers).to(self.device), Net(self.feature_numbers, self.reward_numbers).to(self.device)
 
         # 优化器
-        self.optimizer = torch.optim.Adam(self.model_reward.parameters(), lr=self.lr)
+        self.optimizer = torch.optim.RMSprop(self.model_reward.parameters(), lr=self.lr, alpha=0.95)
         # 损失函数为，均方损失函数
         self.loss_func = nn.MSELoss()
 
     def return_model_reward(self, state):
         # 统一 observation 的 shape (1, size_of_observation)
-        state = torch.unsqueeze(torch.FloatTensor(state), 0)
+        state = torch.unsqueeze(torch.FloatTensor(state), 0).to(self.device)
 
-        model_reward = self.model_reward.forward(state).detach().numpy()
+        with torch.no_grad():
+            model_reward = self.model_reward.forward(state).cpu().numpy()
         return model_reward
 
     def store_state_action_pair(self, s, a):
@@ -109,8 +112,8 @@ class RewardNet:
 
         batch_memory = self.memory_D2[sample_index, :]
 
-        states = torch.FloatTensor(batch_memory[:, :self.feature_numbers])
-        real_reward = torch.unsqueeze(torch.FloatTensor(batch_memory[:, self.feature_numbers + 1]), 1)
+        states = torch.FloatTensor(batch_memory[:, :self.feature_numbers]).to(self.device)
+        real_reward = torch.unsqueeze(torch.FloatTensor(batch_memory[:, self.feature_numbers + 1]), 1).to(self.device)
 
         model_reward = self.model_reward.forward(states)
 
@@ -119,5 +122,3 @@ class RewardNet:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-
-

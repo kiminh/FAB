@@ -4,12 +4,9 @@ import datetime
 from src.DRLB.config import config
 from src.data_type import config as data_type
 from src.DRLB.env import AD_env
-if data_type['is_gpu'] == 0:
-    from src.DRLB.RL_brain_cpu import DRLB
-    from src.DRLB.reward_net_cpu import RewardNet
-else:
-    from src.DRLB.RL_brain_gpu import DRLB
-    from src.DRLB.reward_net_gpu import RewardNet
+
+from src.DRLB.RL_brain import DRLB
+from src.DRLB.reward_net import RewardNet
 
 def bid_func(auc_pCTRS, lamda):
     return auc_pCTRS/ lamda
@@ -175,6 +172,7 @@ def run_env(budget_para):
     optimal_lamda = 0
     test_records_array = []
     test_actions_array = []
+
     for episode in range(config['train_episodes']):
         print('--------第{}轮训练--------\n'.format(episode + 1))
         B_t = [0 for i in range(96)]
@@ -199,6 +197,7 @@ def run_env(budget_para):
         V = 0 # current episode's cumulative directive reward
 
         done = 0
+        episode_loss = 0
         for t in range(96):
             time_t = t
             ROL_t = 96-t-1
@@ -270,7 +269,8 @@ def run_env(budget_para):
             V += origin_reward_t
 
             if RL.memory_counter >= config['batch_size']: # 控制更新速度
-                RL.learn()
+                loss = RL.learn()
+                episode_loss = loss
 
             if done == 1:
                 break
@@ -278,8 +278,10 @@ def run_env(budget_para):
         RewardNet.reset_D2(V)
 
         print('第{}轮，真实曝光数{}, 赢标数{}, 共获得{}个点击, 真实点击数{}, '
-              '利润{}, 预算{}, 花费{}, CPM{}, {}'.format(episode + 1, episode_imps, episode_win_imps, episode_clks, episode_real_clks,
-                                                   episode_profit, budget, episode_spent, episode_spent / episode_win_imps if episode_win_imps > 0 else 0, datetime.datetime.now()))
+              '利润{}, 预算{}, 花费{}, CPM{}, LOSS-{}, {}'
+              .format(episode + 1, episode_imps, episode_win_imps, episode_clks, episode_real_clks,
+                      episode_profit, budget, episode_spent,
+                      episode_spent / episode_win_imps if episode_win_imps > 0 else 0, episode_loss, datetime.datetime.now()))
         print('\n---------测试---------\n')
         test_records, test_actions = run_test(budget_para, original_ctr)
         test_records_array.append(test_records)
@@ -404,10 +406,12 @@ if __name__ == '__main__':
              replace_target_iter=config['relace_target_iter'],  # 每200步替换一次target_net的参数
              memory_size=config['memory_size'],  # 经验池上限
              batch_size=config['batch_size'],  # 每次更新时从memory里面取多少数据出来，mini-batch
+             device=config['device'],
              )
 
     RewardNet = RewardNet([-0.08, -0.03, -0.01, 0, 0.01, 0.03, 0.08],  # 按照数据集中的“块”计量
-                          1, env.feature_numbers, memory_size=config['memory_size'], batch_size=config['batch_size'], )
+                          1, env.feature_numbers, memory_size=config['memory_size'],
+                          batch_size=config['batch_size'], device=config['device'],)
 
     budget_para = config['budget_para']
     for i in range(len(budget_para)):

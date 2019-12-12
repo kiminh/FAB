@@ -321,7 +321,6 @@ def clk_frequency(test_data, budget_para, result_directory):
     bid_records.iloc[:, 0] = bid_records.iloc[:, 0].astype(int)
     bid_records.iloc[:, 1:4] = bid_records.iloc[:, 1:4].astype(int)
 
-
     record_clk_indexs = [300]
     fraction_appear_arrays = bid_records[bid_records.iloc[:, 0].isin(record_clk_indexs)].iloc[:, 3]
     is_in_indexs = bid_records[bid_records.iloc[:, 0].isin(record_clk_indexs)].iloc[:, 3].unique() # 有哪些时段出现了record_clk_index
@@ -373,7 +372,7 @@ reward_directory = 'result_reward_' + reward_type
 
 log_path = '../' + project_name + '/'
 
-result_directory = log_path + campaign_id + result_file + reward_directory
+result_directory = log_path + campaign_id + result_file + reward_directory + '/' + str(data_type['fraction_type'])
 
 heuristic_result_path = '../heuristic_algo/result/' + campaign_id + result_file + '/results_train.best.perf.txt'
 

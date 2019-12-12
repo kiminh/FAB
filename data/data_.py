@@ -258,12 +258,12 @@ def to_DRLB_data(campaign_id, type, train_data, test_data):
     train_to_data_df.to_csv('../src/DRLB/data/' + campaign_id + '/train_DRLB_' + type + '.csv', index=None)
 
     # test_data
-    test_data.iloc[:, [5]] = test_data.iloc[:, [5]].astype(str)  # 类型强制转换
+    test_data.iloc[:, [4]] = test_data.iloc[:, [4]].astype(str)  # 类型强制转换
     test_data = test_data.values
 
-    clk_arrays = test_data[:, 1]
-    pay_price_arrays = test_data[:, 2]
-    ctr_arrays = test_data[:, 4]
+    clk_arrays = test_data[:, 0]
+    pay_price_arrays = test_data[:, 1]
+    ctr_arrays = test_data[:, 3]
 
     origin_time_arrays = to_time_fraction(96, test_data, 'DRLB')
 

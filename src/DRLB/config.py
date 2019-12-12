@@ -25,4 +25,5 @@ config = {
     'relace_target_iter': 100,
     'memory_size': 100000,
     'batch_size': 32,
+    'device': 'cpu:0',
 }

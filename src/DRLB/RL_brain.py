@@ -51,6 +51,7 @@ class DRLB:
             replace_target_iter=300,  # 每300步替换一次target_net的参数
             memory_size=500,  # 经验池的大小
             batch_size=32,  # 每次更新时从memory里面取多少数据出来，mini-batch
+            device = 'cuda: 0',
     ):
         self.action_space = action_space
         self.action_numbers = action_numbers  # 动作的具体数值？[0,0.01,...,budget]
@@ -62,6 +63,7 @@ class DRLB:
         self.memory_size = memory_size  # 记忆上限
         self.batch_size = batch_size  # 每次更新时从 memory 里面取多少记忆出来
         self.epsilon = 0.9
+        self.device = device
 
         if not os.path.exists('result'):
             os.mkdir('result')
@@ -79,13 +81,13 @@ class DRLB:
         self.memory = np.zeros((self.memory_size, self.feature_numbers * 2 + 3))  # 状态的特征数*2加上动作和奖励
 
         # 创建target_net（目标神经网络），eval_net（训练神经网络）
-        self.eval_net, self.target_net = Net(self.feature_numbers, self.action_numbers).cuda(), Net(
-            self.feature_numbers, self.action_numbers).cuda()
+        self.eval_net, self.target_net = Net(self.feature_numbers, self.action_numbers).to(self.device), Net(
+            self.feature_numbers, self.action_numbers).to(self.device)
 
         # 优化器
         self.optimizer = torch.optim.RMSprop(self.eval_net.parameters(), lr=self.lr, alpha=0.95)
         # 损失函数为，均方损失函数
-        self.loss_func = nn.MSELoss().cuda()
+        self.loss_func = nn.MSELoss()
 
         self.cost_his = []  # 记录所有的cost变化，plot画出
 
@@ -107,30 +109,31 @@ class DRLB:
     def choose_action(self, state):
         torch.cuda.empty_cache()
         # 统一 state 的 shape, torch.unsqueeze()这个函数主要是对数据维度进行扩充
-        state = torch.unsqueeze(torch.FloatTensor(state), 0).cuda()
+        state = torch.unsqueeze(torch.FloatTensor(state), 0).to(self.device)
 
         random_probability = max(self.epsilon, 0.5) # 论文的取法
-
-        if np.random.uniform() > random_probability:
-            # 让 eval_net 神经网络生成所有 action 的值, 并选择值最大的 action
-            actions_value = self.eval_net.forward(state)
-            # torch.max(input, dim, keepdim=False, out=None) -> (Tensor, LongTensor),按维度dim 返回最大值
-            # torch.max(a,1) 返回每一行中最大值的那个元素，且返回索引（返回最大元素在这一行的行索引）
-            action_index = torch.max(actions_value, 1)[1].data.cpu().numpy()[0]
-            action = self.action_space[action_index]  # 选择q_eval值最大的那个动作
-        else:
-            index = np.random.randint(0, self.action_numbers)
-            action = self.action_space[index]  # 随机选择动作
+        with torch.no_grad():
+            if np.random.uniform() > random_probability:
+                # 让 eval_net 神经网络生成所有 action 的值, 并选择值最大的 action
+                actions_value = self.eval_net.forward(state)
+                # torch.max(input, dim, keepdim=False, out=None) -> (Tensor, LongTensor),按维度dim 返回最大值
+                # torch.max(a,1) 返回每一行中最大值的那个元素，且返回索引（返回最大元素在这一行的行索引）
+                action_index = torch.max(actions_value, 1)[1].data.cpu().numpy()[0]
+                action = self.action_space[action_index]  # 选择q_eval值最大的那个动作
+            else:
+                index = np.random.randint(0, self.action_numbers)
+                action = self.action_space[index]  # 随机选择动作
         return action
 
     # 选择最优动作
     def choose_best_action(self, state):
         # 统一 state 的 shape (1, size_of_state)
-        state = torch.unsqueeze(torch.FloatTensor(state), 0).cuda()
+        state = torch.unsqueeze(torch.FloatTensor(state), 0).to(self.device)
 
-        actions_value = self.eval_net.forward(state)
-        action_index = torch.max(actions_value, 1)[1].data.cpu().numpy()[0]
-        action = self.action_space[action_index]  # 选择q_eval值最大的那个动作
+        with torch.no_grad():
+            actions_value = self.eval_net.forward(state)
+            action_index = torch.max(actions_value, 1)[1].data.cpu().numpy()[0]
+            action = self.action_space[action_index]  # 选择q_eval值最大的那个动作
         return action
 
     # 定义DQN的学习过程
@@ -157,17 +160,17 @@ class DRLB:
         # 获取到q_next（target_net产生）以及q_eval（eval_net产生）
         # 如store_transition函数中存储所示，state存储在[0, feature_numbers-1]的位置（即前feature_numbets）
         # state_存储在[feature_numbers+1，memory_size]（即后feature_numbers的位置）
-        b_s = torch.FloatTensor(batch_memory[:, :self.feature_numbers]).cuda()
+        b_s = torch.FloatTensor(batch_memory[:, :self.feature_numbers]).to(self.device)
 
         b_a = []
         b_a_origin = batch_memory[:, self.feature_numbers].astype(float)
         for action in b_a_origin:
             b_a.append(self.action_space.index(action))
-        b_a = torch.unsqueeze(torch.LongTensor(b_a), 1).cuda()
-        b_r = torch.FloatTensor(batch_memory[:, self.feature_numbers + 1]).cuda()
-        b_s_ = torch.FloatTensor(batch_memory[:, -self.feature_numbers:]).cuda()
+        b_a = torch.unsqueeze(torch.LongTensor(b_a), 1).to(self.device)
+        b_r = torch.FloatTensor(batch_memory[:, self.feature_numbers + 1]).to(self.device)
+        b_s_ = torch.FloatTensor(batch_memory[:, -self.feature_numbers:]).to(self.device)
 
-        b_is_done = torch.FloatTensor(1 - batch_memory[:, -1]).view(self.batch_size, 1).cuda()
+        b_is_done = torch.FloatTensor(1 - batch_memory[:, -1]).view(self.batch_size, 1).to(self.device)
 
         # q_eval w.r.t the action in experience
         # b_a - 1的原因是，出价动作最高300，而数组的最大index为299
@@ -184,7 +187,7 @@ class DRLB:
         loss.backward()
         self.optimizer.step()
 
-        # self.cost_his.append(loss) # 记录cost误差
+        return loss.item()
 
     def control_epsilon(self, t):
         # 逐渐增加epsilon，增加行为的利用性
