@@ -5,7 +5,12 @@ import pandas as pd
 import numpy as np
 import os
 from src.data_type import config as data_type
-random.seed(10)
+
+def setup_seed(seed):
+    np.random.seed(seed)
+    random.seed(seed)
+# 设置随机数种子
+setup_seed(1)
 
 def bidding_lin(pctr, base_ctr, base_bid): # 启发式算法
     return int(pctr * base_bid / base_ctr)

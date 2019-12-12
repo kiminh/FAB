@@ -4,7 +4,11 @@ import random
 import os
 from src.data_type import config as data_type
 
-random.seed(1)
+def setup_seed(seed):
+    np.random.seed(seed)
+    random.seed(seed)
+# 设置随机数种子
+setup_seed(1)
 
 def to_time_fraction(fraction_type, data, agent):
     origin_time_arrays = data[:, 4]
@@ -296,11 +300,11 @@ if __name__ == '__main__':
     type = data_type['type'] # down sample - sample; no sample - data
     fraction_type = data_type['fraction_type']
 
-    sample_type = 1 # 1 - down sample; 2 - all sample; 3 - train sample
+    sample_type = 3 # 1 - down sample; 2 - all sample; 3 - train sample
     print('######Generate Train and Test Datas######\n')
     test_clks, test_auc_nums = generate_data(campaign_id, fraction_type)
 
-    if sample_type == 3:
+    if sample_type == 1:
         print('######Down Sample Datas######\n')
         down_sample(campaign_id, test_clks, test_auc_nums)
     elif sample_type == 2:
