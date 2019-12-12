@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime
+import os
 from src.FAB_BN.config import config
 from src.data_type import config as data_type
 from src.FAB_BN.RL_brain import DDPG, OrnsteinUhlenbeckNoise
@@ -327,12 +328,12 @@ def run_env(budget_para):
                         is_learn = False
 
             actions_df = pd.DataFrame(data=actions)
-            actions_df.to_csv(log_path + '/result_reward_1/train_actions_' + str(budget_para) + '.csv')
+            actions_df.to_csv(log_path + '/result_reward_1/' + str(fraction_type) + '/train_actions_' + str(budget_para) + '.csv')
 
             hour_clks = {'clks': e_clks, 'no_bid_clks': np.subtract(real_hour_clks, e_clks).tolist(),
                          'real_clks': real_hour_clks}
             hour_clks_df = pd.DataFrame(data=hour_clks)
-            hour_clks_df.to_csv(log_path + '/result_reward_1/train_hour_clks_' + str(budget_para) + '.csv')
+            hour_clks_df.to_csv(log_path + '/result_reward_1/' + str(fraction_type) + '/train_hour_clks_' + str(budget_para) + '.csv')
             print('episode {}, reward={}, profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, '
                   'imps={}, cpm={}, break_time_slot={}, td_error={}, action_loss={}\n'.format(
                     episode + 1, np.sum(e_reward), np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
@@ -344,15 +345,15 @@ def run_env(budget_para):
 
     e_results_df = pd.DataFrame(data=e_results, columns=['reward', 'profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                                          'break_time_slot', 'td_error', 'action_loss'])
-    e_results_df.to_csv(log_path + '/result_reward_1/train_episode_results_' + str(budget_para) + '.csv')
+    e_results_df.to_csv(log_path + '/result_reward_1/' + str(fraction_type) + '/train_episode_results_' + str(budget_para) + '.csv')
 
     e_actions_df = pd.DataFrame(data=e_actions)
-    e_actions_df.to_csv(log_path + '/result_reward_1/test_episode_actions_' + str(budget_para) + '.csv')
+    e_actions_df.to_csv(log_path + '/result_reward_1/' + str(fraction_type) + '/test_episode_actions_' + str(budget_para) + '.csv')
 
     test_records_df = pd.DataFrame(data=test_records,
                                    columns=['profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                             'break_time_slot'])
-    test_records_df.to_csv(log_path + '/result_reward_1/test_episode_results_' + str(budget_para) + '.csv')
+    test_records_df.to_csv(log_path + '/result_reward_1/' + str(fraction_type) + '/test_episode_results_' + str(budget_para) + '.csv')
 
 
 def test_env(budget, budget_para, test_data, eCPC):
@@ -468,13 +469,13 @@ def test_env(budget, budget_para, test_data, eCPC):
     result_df = pd.DataFrame(data=results,
                              columns=['profits', 'budget', 'cost', 'clks', 'real_clks', 'bids', 'imps', 'cpm',
                                       'break_time_slot'])
-    result_df.to_csv(log_path + '/result_reward_1/test_result_' + str(budget_para) + '.csv')
+    result_df.to_csv(log_path + '/result_reward_1/' + str(fraction_type) + '/test_result_' + str(budget_para) + '.csv')
 
     test_actions_df = pd.DataFrame(data=actions)
-    test_actions_df.to_csv(log_path + '/result_reward_1/test_action_' + str(budget_para) + '.csv')
+    test_actions_df.to_csv(log_path + '/result_reward_1/' + str(fraction_type) + '/test_action_' + str(budget_para) + '.csv')
 
     test_hour_clks_df = pd.DataFrame(data=hour_clks)
-    test_hour_clks_df.to_csv(log_path + '/result_reward_1/test_hour_clks_' + str(budget_para) + '.csv')
+    test_hour_clks_df.to_csv(log_path + '/result_reward_1/' + str(fraction_type) + '/test_hour_clks_' + str(budget_para) + '.csv')
     print('profits={}, budget={}, cost={}, clks={}, real_clks={}, bids={}, imps={}, cpm={}, break_time_slot={}, {}\n'.format(
         np.sum(e_profits), budget, np.sum(e_cost), int(np.sum(e_clks)),
         int(np.sum(real_clks)), np.sum(bid_nums), np.sum(imps),
@@ -485,6 +486,8 @@ def test_env(budget, budget_para, test_data, eCPC):
 
 if __name__ == '__main__':
     log_path = data_type['campaign_id'] + data_type['type']
+    if not os.path.exists(log_path + '/result_reward_1/' + str(data_type['fraction_type'])):
+        os.mkdir(log_path + '/result_reward_1/' + str(data_type['fraction_type']))
 
     RL = DDPG(
         feature_nums=config['feature_num'],

@@ -386,7 +386,10 @@ for budget_para in budget_paras:
 # 各个时段的平均市场价格
 print('\n##########Time slots’average market prices##########')
 for i in range(data_type['fraction_type']):
-    print(np.sum(pd_test_data[pd_test_data.iloc[:, 2].isin([i])].iloc[:, 1])/len(pd_test_data[pd_test_data.iloc[:, 2].isin([i])]))
+    if len(pd_test_data[pd_test_data.iloc[:, 5].isin([i])]) > 0:
+        print(np.sum(pd_test_data[pd_test_data.iloc[:, 5].isin([i])].iloc[:, 1])/len(pd_test_data[pd_test_data.iloc[:, 5].isin([i])]))
+    else:
+        print(0)
 
 print('\n##########Time slots’ctr statistics##########')
 for budget_para in budget_paras:
