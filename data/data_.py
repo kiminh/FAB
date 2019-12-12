@@ -127,7 +127,7 @@ def down_sample(campaign_id, test_clks, test_auc_nums):
     test_sample_rate = test_sample_rate
 
     # 获取测试样本
-    with open(campaign_id + str(fraction_type) + '/test_sample.csv', 'w') as fo:
+    with open(campaign_id + str(fraction_type) + '/temp_test_sample.csv', 'w') as fo:
         fi = open(campaign_id + str(fraction_type) + '/test_data.csv')
         p = 0  # 原始正样本
         n = 0  # 原始负样本
@@ -153,16 +153,40 @@ def down_sample(campaign_id, test_clks, test_auc_nums):
         fi.close()
     print('测试数据负采样完成')
 
+    temp_test_sample = pd.read_csv(campaign_id + str(fraction_type) + '/temp_test_sample.csv')
+    temp_test_sample.iloc[:, 2] = temp_test_sample.iloc[:, 2].astype(int)
+
+    sample_rate = 1 - (300000 / len(temp_test_sample))
+
+    sample_test_data = np.array([[]])
+    for i in range(24):
+        current_time_data = temp_test_sample[temp_test_sample.iloc[:, 2] == i]
+        current_time_data = current_time_data.reset_index(
+            drop=True)  # 重新生成索引；如果用reindex方法后净会根据新索引进行重排，如果某个索引值当前不存在，就会引入缺失值NAN
+
+        drop_sample_index = np.random.choice(len(current_time_data), size=int(len(current_time_data) * sample_rate),
+                                             replace=False).tolist()
+        temp_current_test_data = current_time_data.drop(drop_sample_index, axis=0)
+        if i == 0:
+            sample_test_data = temp_current_test_data
+        else:
+            sample_test_data = pd.concat([sample_test_data, temp_current_test_data])
+
+    columns = ['clk', 'market_price', 'hour', 'pctr', 'minutes', 'time_fraction']
+    sample_train_data_df = pd.DataFrame(data=sample_test_data, columns=columns)
+
+    sample_train_data_df.to_csv(campaign_id + str(fraction_type) + '/test_sample.csv', index=None)
+
+    os.remove(campaign_id + str(fraction_type) + '/temp_test_sample.csv')
+
+
 def all_sample(campaign_id):
     train_data = pd.read_csv(campaign_id + str(fraction_type) + '/train_data.csv')
     train_data.to_csv(campaign_id + str(fraction_type) + '/train_sample.csv', index=None)  # 训练集保持不变
 
     test_data = pd.read_csv(campaign_id + str(fraction_type) + '/test_data.csv')
 
-    if campaign_id == '1458':
-        sample_rate = 1 - (300000 / len(test_data)) # 选择某几行删除
-    else:
-        sample_rate =  1- (300000 / len(test_data))
+    sample_rate =  1- (300000 / len(test_data))
 
     sample_test_data = np.array([[]])
     for i in range(24):
@@ -187,10 +211,7 @@ def train_sample(campaign_id):
 
     train_data = pd.read_csv(campaign_id + str(fraction_type) + '/train_data.csv')
 
-    if campaign_id == '1458':
-        sample_rate = 1 - (300000 / len(train_data)) # 选择某几行删除
-    else:
-        sample_rate =  1- (300000 / len(train_data))
+    sample_rate =  1- (300000 / len(train_data))
 
     sample_test_data = np.array([[]])
     for i in range(24):
@@ -275,11 +296,11 @@ if __name__ == '__main__':
     type = data_type['type'] # down sample - sample; no sample - data
     fraction_type = data_type['fraction_type']
 
-    sample_type = 3 # 1 - down sample; 2 - all sample; 3 - train sample
+    sample_type = 1 # 1 - down sample; 2 - all sample; 3 - train sample
     print('######Generate Train and Test Datas######\n')
     test_clks, test_auc_nums = generate_data(campaign_id, fraction_type)
 
-    if sample_type == 1:
+    if sample_type == 3:
         print('######Down Sample Datas######\n')
         down_sample(campaign_id, test_clks, test_auc_nums)
     elif sample_type == 2:
