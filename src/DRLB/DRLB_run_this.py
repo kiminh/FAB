@@ -119,17 +119,17 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, B_t, time_t, r
     ROL_t = 96 - time_t - 1
     CPM_t = t_spent / t_win_imps if t_spent != 0 else 0
     WR_t = t_win_imps / t_auctions if t_auctions > 0 else 0
-    state_t = [time_t+1, B_t[time_t], ROL_t, BCR_t, CPM_t, WR_t, reward_t]
+    state_t = [time_t+1, B_t[time_t], ROL_t, BCR_t, CPM_t, WR_t, t_clks]
 
     net_reward_t = RewardNet.return_model_reward(state_t)
     # state_t = [(time_t + 1)/96, B_t[time_t]/budget, ROL_t/96, BCR_t, CPM_t/100, WR_t, net_reward_t[0][0]]
-    state_t = [time_t + 1, B_t[time_t], ROL_t, BCR_t, CPM_t, WR_t, net_reward_t[0][0]]
+    state_t = [time_t + 1, B_t[time_t], ROL_t, BCR_t, CPM_t, WR_t, t_clks]
 
     t_real_clks = np.sum(auc_t_datas.iloc[:, 0])
 
     t_real_imps = len(auc_t_datas)
 
-    return state_t, lamda, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done
+    return state_t, lamda, B_t, net_reward_t[0][0], origin_reward_t, profit_t, t_clks, bid_arrays, remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done
 
 def choose_init_lamda(campaign, original_ctr):
     results_train_best = open('../heuristic_algo/result/' + campaign + data_type['type'] + '/results_train.best.perf.txt', 'r')
