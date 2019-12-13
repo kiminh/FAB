@@ -71,8 +71,17 @@ def to_time_fraction(fraction_type, data, agent):
                         now_time_np_array[k] = i + 1
                     else:
                         now_time_np_array[k] = i
-    else:
+    elif fraction_type == 24:
         now_time_np_array = data[:, 2]
+    else:  # 12
+        origin_time_arrays = data[:, 2]
+        for k, hour_item in enumerate(data[:, 2]):
+            if (hour_item + 1) % 2 == 0:
+                origin_time_arrays[k] = int((hour_item - 1) / 2)
+            else:
+                origin_time_arrays[k] = int(hour_item / 2)
+
+        now_time_np_array = origin_time_arrays
 
     return now_time_np_array
 

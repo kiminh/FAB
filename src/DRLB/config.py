@@ -20,7 +20,7 @@ config = {
     'feature_num': 7,
     'state_feature_num': 7,
     'budget_para': [1/16],
-    'train_episodes': 10000,
+    'train_episodes': 1000,
     'neuron_nums': 100,
     'relace_target_iter': 100,
     'memory_size': 100000,
