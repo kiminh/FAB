@@ -18,26 +18,25 @@ class Net(nn.Module):
     def __init__(self, feature_numbers, action_numbers, reward_numbers):
         super(Net, self).__init__()
 
-        # 第一层网络的神经元个数，第二层神经元的个数为动作数组的个数
+        # 第一层网络的神经元个数
         neuron_numbers_1 = 100
-        # 第二层网络的神经元个数，第二层神经元的个数为动作数组的个数
+        # 第二层网络的神经元个数
         neuron_numbers_2 = 100
+        # 第三层网络的神经元个数
+        neuron_numbers_3 = 100
 
         self.fc1 = nn.Linear(feature_numbers + action_numbers, neuron_numbers_1)
-        self.fc1.weight.data.normal_(0, 0.1)  # 全连接隐层 1 的参数初始化
         self.fc2 = nn.Linear(neuron_numbers_1, neuron_numbers_2)
-        self.fc2.weight.data.normal_(0, 0.1)  # 全连接隐层 2 的参数初始化
-        self.out = nn.Linear(neuron_numbers_1, reward_numbers)
-        self.out.weight.data.normal_(0, 0.1)
+        self.fc3 = nn.Linear(neuron_numbers_2, neuron_numbers_3)
+        self.out = nn.Linear(neuron_numbers_3, reward_numbers)
 
     def forward(self, input):
-        x_1 = self.fc1(input)
-        x_1 = F.relu(x_1)
-        x_2 = self.fc2(x_1)
-        x_2 = F.relu(x_2)
-        actions_value = self.out(x_2)
+        x_1 = F.relu(self.fc1(input))
+        x_2 = F.relu(self.fc2(x_1))
+        x_3 = F.relu(self.fc2(x_2))
+        rewards_value = self.out(x_3)
 
-        return actions_value
+        return rewards_value
 
 class RewardNet:
     def __init__(
@@ -46,7 +45,7 @@ class RewardNet:
         action_numbers,
         reward_numbers,
         feature_numbers,
-        learning_rate = 0.01,
+        learning_rate = 0.001,
         memory_size = 500,
         batch_size = 32,
         device = 'cuda:0',
@@ -76,8 +75,6 @@ class RewardNet:
 
         # 优化器
         self.optimizer = torch.optim.Adam(self.model_reward.parameters(), lr=self.lr, weight_decay=1e-3)
-        # 损失函数为，均方损失函数
-        self.loss_func = nn.MSELoss()
 
     def return_model_reward(self, state_action):
         # 统一 observation 的 shape (1, size_of_observation)
@@ -113,7 +110,7 @@ class RewardNet:
 
         model_reward = self.model_reward.forward(state_actions)
 
-        loss = self.loss_func(model_reward, real_reward)
+        loss = F.mse_loss(model_reward, real_reward)
 
         self.optimizer.zero_grad()
         loss.backward()

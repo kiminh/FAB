@@ -19,7 +19,7 @@ config = {
     'reward_decay': 1,
     'feature_num': 7,
     'state_feature_num': 7,
-    'budget_para': [1/16],
+    'budget_para': [1/2],
     'train_episodes': 1000,
     'neuron_nums': 100,
     'relace_target_iter': 100,

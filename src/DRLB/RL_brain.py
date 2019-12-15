@@ -22,20 +22,19 @@ class Net(nn.Module):
         neuron_numbers_1 = 100
         # 第二层网络的神经元个数，第二层神经元的个数为动作数组的个数
         neuron_numbers_2 = 100
+        # 第三层网络的神经元个数，第四层神经元的个数为动作数组的个数
+        neuron_numbers_3 = 100
 
         self.fc1 = nn.Linear(feature_numbers, neuron_numbers_1)
-        self.fc1.weight.data.normal_(0, 0.1)  # 全连接隐层 1 的参数初始化
         self.fc2 = nn.Linear(neuron_numbers_1, neuron_numbers_2)
-        self.fc2.weight.data.normal_(0, 0.1)  # 全连接隐层 2 的参数初始化
-        self.out = nn.Linear(neuron_numbers_1, action_numbers)
-        self.out.weight.data.normal_(0, 0.1)  # 全连接隐层 2 的参数初始化
+        self.fc3 = nn.Linear(neuron_numbers_2, neuron_numbers_3)
+        self.out = nn.Linear(neuron_numbers_3, action_numbers)
 
     def forward(self, input):
-        x_1 = self.fc1(input)
-        x_1 = F.relu(x_1)
-        x_2 = self.fc2(x_1)
-        x_2 = F.relu(x_2)
-        actions_value = self.out(x_2)
+        x_1 = F.relu(self.fc1(input))
+        x_2 = F.relu(self.fc2(x_1))
+        x_3 = F.relu(self.fc3(x_2))
+        actions_value = self.out(x_3)
         return actions_value
 
 # 定义DeepQNetwork
@@ -168,7 +167,7 @@ class DRLB:
             b_a.append(self.action_space.index(action))
         b_a = torch.unsqueeze(torch.LongTensor(b_a), 1).to(self.device)
         b_r = torch.FloatTensor(batch_memory[:, self.feature_numbers + 1]).to(self.device)
-        b_s_ = torch.FloatTensor(batch_memory[:, -self.feature_numbers:]).to(self.device)
+        b_s_ = torch.FloatTensor(batch_memory[:, self.feature_numbers + 2: 2 * (self.feature_numbers + 1)]).to(self.device)
 
         b_is_done = torch.FloatTensor(1 - batch_memory[:, -1]).view(self.batch_size, 1).to(self.device)
 
@@ -179,9 +178,8 @@ class DRLB:
 
         q_target = b_r.view(self.batch_size, 1) + self.gamma * torch.mul(q_next.max(1)[0].view(self.batch_size,
                                                                                      1), b_is_done)
-
         # 训练eval_net
-        loss = self.loss_func(q_eval, q_target)
+        loss = F.mse_loss(q_eval, q_target)
 
         self.optimizer.zero_grad()
         loss.backward()

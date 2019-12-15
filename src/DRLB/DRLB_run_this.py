@@ -26,12 +26,12 @@ def statistics(B_t, origin_t_spent, origin_t_win_imps,
                 temp_t_auctions += 1
                 if remain_auc_num[t] - temp_t_auctions >= 0:
                     if B_t[t] - temp_t_spent >= 0:
-                        if auc_t_datas.iloc[i, 2] <= bid_arrays[i]:
-                            temp_t_spent += auc_t_datas.iloc[i, 2]
+                        if auc_t_datas[i, 2] <= bid_arrays[i]:
+                            temp_t_spent += auc_t_datas[i, 2]
                             temp_t_win_imps += 1
-                            temp_t_clks += auc_t_datas.iloc[i, 0]
-                            temp_profit_t += (auc_t_datas.iloc[i, 1] * cpc - auc_t_datas.iloc[i, 2])
-                            temp_reward_t += auc_t_datas.iloc[i, 0]
+                            temp_t_clks += auc_t_datas[i, 0]
+                            temp_profit_t += (auc_t_datas[i, 1] * cpc - auc_t_datas[i, 2])
+                        temp_reward_t += auc_t_datas[i, 0] * auc_t_datas[i, 1]
                     else:
                         break
                 else:
@@ -57,15 +57,16 @@ def statistics(B_t, origin_t_spent, origin_t_win_imps,
 
 def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, action, B_t, time_t, remain_auc_num):
     cpc = 30000
+    auc_t_datas = auc_t_datas.values
     bid_arrays = bid_func(auc_t_data_pctrs, lamda)  # 出价
     bid_arrays = np.where(bid_arrays >= 300, 300, bid_arrays)
-    win_auc_datas = auc_t_datas[auc_t_datas.iloc[:, 2] <= bid_arrays].values  # 赢标的数据
+    win_auc_datas = auc_t_datas[auc_t_datas[:, 2] <= bid_arrays]  # 赢标的数据
     t_spent = np.sum(win_auc_datas[:, 2])  # 当前t时段花费
     t_auctions = len(auc_t_datas)  # 当前t时段参与拍卖次数
     t_win_imps = len(win_auc_datas)  # 当前t时段赢标曝光数
     t_clks = np.sum(win_auc_datas[:, 0])
     profit_t = np.sum(win_auc_datas[:, 1] * cpc - win_auc_datas[:, 2])  # RewardNet
-    reward_t = np.sum(np.multiply(win_auc_datas[:, 0], win_auc_datas[:, 1])) # 按论文中的奖励设置，作为直接奖励
+    reward_t = np.sum(np.multiply(auc_t_datas[:, 0], auc_t_datas[:, 1])) # 按论文中的奖励设置，作为直接奖励
     origin_reward_t = reward_t
 
     done = 0
@@ -119,12 +120,12 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, action, B_t, t
     ROL_t = 96 - time_t - 1
     CPM_t = t_spent / t_win_imps if t_spent != 0 else 0
     WR_t = t_win_imps / t_auctions if t_auctions > 0 else 0
-    state_t = [(time_t + 1), B_t[time_t]/budget, ROL_t, BCR_t, CPM_t, WR_t, origin_reward_t]
+    state_t = [(time_t + 1) / 96, B_t[time_t] / budget, ROL_t / 96, BCR_t, CPM_t /100, WR_t, origin_reward_t]
 
     state_action_t = np.hstack((state_t, action)).tolist()
     net_reward_t = RewardNet.return_model_reward(state_action_t)
 
-    t_real_clks = np.sum(auc_t_datas.iloc[:, 0])
+    t_real_clks = np.sum(auc_t_datas[:, 0])
 
     t_real_imps = len(auc_t_datas)
 
@@ -261,7 +262,7 @@ def run_env(budget_para):
             state_action_pairs.append((state_t, action))
 
             action_records[t] = action
-            RL.up_learn_step()
+
             RL.control_epsilon(t + 1)
 
             episode_spent += t_spent
