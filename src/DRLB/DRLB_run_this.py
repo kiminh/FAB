@@ -119,7 +119,7 @@ def state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, lamda, action, B_t, t
     ROL_t = 96 - time_t - 1
     CPM_t = t_spent / t_win_imps if t_spent != 0 else 0
     WR_t = t_win_imps / t_auctions if t_auctions > 0 else 0
-    state_t = [(time_t + 1)/96, B_t[time_t]/budget, ROL_t/96, BCR_t, CPM_t/100, WR_t, origin_reward_t]
+    state_t = [(time_t + 1), B_t[time_t]/budget, ROL_t, BCR_t, CPM_t, WR_t, origin_reward_t]
 
     state_action_t = np.hstack((state_t, action)).tolist()
     net_reward_t = RewardNet.return_model_reward(state_action_t)
