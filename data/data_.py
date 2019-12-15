@@ -283,7 +283,7 @@ if __name__ == '__main__':
     type = data_type['type'] # down sample - sample; no sample - data
     fraction_type = data_type['fraction_type']
 
-    sample_type = 1 # 1 - down sample; 2 - all sample; 3 - train sample
+    sample_type = 2 # 1 - down sample; 2 - all sample; 3 - train sample
     print('######Generate Train and Test Datas######\n')
     test_clks, test_auc_nums = generate_data(campaign_id, fraction_type)
 

@@ -85,7 +85,7 @@ class DRLB:
             self.feature_numbers, self.action_numbers).to(self.device)
 
         # 优化器
-        self.optimizer = torch.optim.RMSprop(self.eval_net.parameters(), lr=self.lr, weight_decay=1e-3, momentum=0.95)
+        self.optimizer = torch.optim.Adam(self.eval_net.parameters())
         # 损失函数为，均方损失函数
         self.loss_func = nn.MSELoss()
 
