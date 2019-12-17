@@ -29,6 +29,8 @@ def setup_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
+# 设置随机数种子
+setup_seed(1)
 
 neural_nums_a_1 = config['neuron_nums_a_1']
 neural_nums_a_2 = config['neuron_nums_a_2']
@@ -41,9 +43,6 @@ class Actor(nn.Module):
         self.fc1 = nn.Linear(feature_numbers, neural_nums_a_1)
         self.fc2 = nn.Linear(neural_nums_a_1, neural_nums_a_2)
         self.out = nn.Linear(neural_nums_a_2, action_numbers)
-
-        # 设置随机数种子
-        setup_seed(1)
 
         self.batch_norm_input = nn.BatchNorm1d(feature_numbers,
                      eps=1e-05,
@@ -83,9 +82,6 @@ class Critic(nn.Module):
         self.fc_a = nn.Linear(action_numbers, neural_nums_c_1)
         self.fc_q = nn.Linear(2 * neural_nums_c_1, neural_nums_c_2)
         self.fc_ = nn.Linear(neural_nums_c_2, action_numbers)
-
-        # 设置随机数种子
-        setup_seed(1)
 
         self.batch_norm_input = nn.BatchNorm1d(feature_numbers,
                                                eps=1e-05,

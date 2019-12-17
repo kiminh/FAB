@@ -8,6 +8,8 @@ from src.FAB_BN.RL_brain import DDPG, OrnsteinUhlenbeckNoise
 
 def setup_seed(seed):
     np.random.seed(seed)
+# 设置随机数种子
+setup_seed(1)
 
 # 由启发式算法得到的eCPC
 def choose_eCPC(campaign, original_ctr):
@@ -488,9 +490,6 @@ def test_env(budget, budget_para, test_data, eCPC):
 
 
 if __name__ == '__main__':
-    # 设置随机数种子
-    setup_seed(1)
-
     log_path = data_type['campaign_id'] + data_type['type']
     if not os.path.exists(log_path + '/result_reward_1/' + str(data_type['fraction_type'])):
         os.mkdir(log_path + '/result_reward_1/' + str(data_type['fraction_type']))
