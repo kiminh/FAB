@@ -15,13 +15,13 @@ config = {
     'data_feature_index': 1, # 15:train-fm,1
     'state_feature_num': 1, #,1
     # ctr 预测参数：./ffm-train -l 0.00001 -k 10 -t 20 -r 0.03 -s {nr_thread} {save}train_{data_name}_{day}.ffm
-    'budget_para': [1/4],
+    'budget_para': [1/8],
     'train_episodes': 10000,
     'neuron_nums_c_1': 50,
     'neuron_nums_c_2': 40,
     'neuron_nums_a_1': 30,
     'neuron_nums_a_2': 20,
-    'device': 'cuda:0',
+    'device': 'cpu:0',
     'learn_iter': 30,
     'observation_episode': 10,
     'memory_size': 1000000,

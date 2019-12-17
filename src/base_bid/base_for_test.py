@@ -14,7 +14,7 @@ def bidding_lin(pctr, base_ctr, avg_market_price): # base_ctr是平均pCTR值
 def bidding_lin_opt(pctr, base_ctr, base_bid):
     return int(pctr * base_bid / base_ctr)
 
-def bidding_opt(c, pCTR, lamda=8.2e-7):  # 出价策略函数, 5.5e-6
+def bidding_opt(c, pCTR, lamda=6.2e-7):  # 出价策略函数, 5.5e-6
     bid_price = math.sqrt(c*pCTR/lamda + c**2) -c
     return bid_price
 
@@ -39,6 +39,7 @@ def simulate_one_bidding_strategy_with_parameter(bidding_opt_c, cases, ctrs, tco
     win_hour_clks = [0 for i in range(24)]
     hour_clks = [0 for i in range(24)]
 
+    bid_records = []
     for idx in range(0, len(cases)):
         pctr = ctrs[idx]
         if algo == "lin":
@@ -67,7 +68,13 @@ def simulate_one_bidding_strategy_with_parameter(bidding_opt_c, cases, ctrs, tco
         if cost > budget:
             print('早停时刻', case[2])
             break
+
+        # actions,prices,clicks,hours,thetas
+        bid_records.append([bid, case[1], case[0], case[2], pctr])
     cpm = (cost / imps) if imps > 0 else 0
+
+    bid_records_df = pd.DataFrame(data=bid_records, columns=['actions', 'prices', 'clicks', 'hours', 'thetas'])
+    bid_records_df.to_csv('result/' + data_type['campaign_id'] + data_type['type'] + '/' + algo + '_bids_' + str(1/proportion) + '.csv', index=None)
     return str(proportion) + '\t' + str(profits) + '\t' + str(clks) + '\t' + str(real_clks) + '\t' + str(bids) + '\t' + \
         str(imps) + '\t' + str(real_imps) + '\t' + str(budget) + '\t' + str(cost) + '\t' + str(cpm) + '\t'+ algo + '\t' + str(para)\
         , no_win_hour_clks, win_hour_clks, hour_clks

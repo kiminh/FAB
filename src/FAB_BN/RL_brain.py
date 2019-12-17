@@ -11,8 +11,6 @@ def setup_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
-# 设置随机数种子
-setup_seed(1)
 
 class DDPG():
     def __init__(
@@ -36,6 +34,9 @@ class DDPG():
         self.batch_size = batch_size
         self.tau = tau
         self.device = device
+
+        # 设置随机数种子
+        setup_seed(1)
 
         if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
