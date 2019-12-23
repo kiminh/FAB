@@ -8,14 +8,19 @@ from src.data_type import config as data_type
 import os
 random.seed(10)
 
-def bidding_lin(pctr, base_ctr, avg_market_price): # base_ctr是平均pCTR值
-    return int(pctr * avg_market_price / base_ctr)
+def bidding_lin(pctr, base_pctr, avg_market_price): # base_ctr是平均pCTR值
+    bid_price = int(pctr * avg_market_price / base_pctr)
+    bid_price = bid_price if bid_price <= 300 else 300
+    return bid_price
 
 def bidding_lin_opt(pctr, base_ctr, base_bid):
-    return int(pctr * base_bid / base_ctr)
+    bid_price = int(pctr * base_bid / base_ctr)
+    bid_price = bid_price if bid_price <= 300 else 300
+    return bid_price
 
-def bidding_opt(c, pCTR, lamda=6.2e-7):  # 出价策略函数, 5.5e-6
-    bid_price = math.sqrt(c*pCTR/lamda + c**2) -c
+def bidding_opt(c, pCTR, lamda=5.5e-7):  # 出价策略函数, 5.5e-6
+    bid_price = math.sqrt(c*pCTR/lamda + c**2) - c
+    bid_price = int(bid_price) if int(bid_price) <= 300 else 300
     return bid_price
 
 def win_auction(case, bid):

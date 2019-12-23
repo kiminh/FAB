@@ -173,6 +173,12 @@ def run_env(budget_para):
     test_records_array = []
     test_actions_array = []
 
+    test_all_records_array = []
+    test_all_actions_array = []
+
+    test_down_records_array = []
+    test_down_actions_array = []
+
     for episode in range(config['train_episodes']):
         print('--------第{}轮训练--------\n'.format(episode + 1))
         B_t = [0 for i in range(96)]
@@ -298,6 +304,16 @@ def run_env(budget_para):
         test_records_array.append(test_records)
         test_actions_array.append(test_actions)
 
+        print('\n---------all测试---------\n')
+        test_all_records, test_all_actions = run_all_test(budget_para, original_ctr)
+        test_all_records_array.append(test_all_records)
+        test_all_actions_array.append(test_all_actions)
+
+        print('\n---------down测试---------\n')
+        test_down_records, test_down_actions = run_down_test(budget_para, original_ctr)
+        test_down_records_array.append(test_down_records)
+        test_down_actions_array.append(test_down_actions)
+
         episode_result_data = [episode_imps, episode_win_imps, episode_clks, episode_real_clks,
                                episode_profit, budget, episode_spent, episode_spent / episode_win_imps if episode_win_imps > 0 else 0]
         result_data.append(episode_result_data)
@@ -312,6 +328,24 @@ def run_env(budget_para):
     test_actions_array_df.to_csv(
         'result/' + data_type['campaign_id'] + data_type['type'] + '/test_episode_actions_' + str(budget_para) + '.csv')
 
+    # all sample
+    test_all_records_array_df = pd.DataFrame(data=test_all_records_array)
+    test_all_records_array_df.to_csv(
+        'result/' + data_type['campaign_id'] + data_type['type'] + '/all_sample/test_episode_results_' + str(budget_para) + '.csv')
+
+    test_all_actions_array_df = pd.DataFrame(data=test_all_actions_array)
+    test_all_actions_array_df.to_csv(
+        'result/' + data_type['campaign_id'] + data_type['type'] + '/all_sample/test_episode_actions_' + str(budget_para) + '.csv')
+
+    # down sample
+    test_down_records_array_df = pd.DataFrame(data=test_down_records_array)
+    test_down_records_array_df.to_csv(
+        'result/' + data_type['campaign_id'] + data_type['type'] + '/down_sample/test_episode_results_' + str(budget_para) + '.csv')
+
+    test_down_actions_array_df = pd.DataFrame(data=test_down_actions_array)
+    test_down_actions_array_df.to_csv(
+        'result/' + data_type['campaign_id'] + data_type['type'] + '/down_sample/test_episode_actions_' + str(budget_para) + '.csv')
+
     action_df = pd.DataFrame(data=episode_action_records)
     action_df.to_csv('result/' + data_type['campaign_id'] + data_type['type'] + '/train_episode_actions_' + str(budget_para) + '.csv')
 
@@ -320,8 +354,8 @@ def run_env(budget_para):
 
     return optimal_lamda
 
-def run_test(budget_para, original_ctr):
-    test_data = pd.read_csv('data/' + data_type['campaign_id'] + '/test_DRLB_' + data_type['type'] + '.csv', header=None).drop([0])
+def run_down_test(budget_para, original_ctr):
+    test_data = pd.read_csv('data/' + data_type['campaign_id'] + '/test_DRLB_down_sample.csv', header=None).drop([0])
     test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
     test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
 
@@ -364,7 +398,7 @@ def run_test(budget_para, original_ctr):
         if t == 0:
             init_action = 0
             state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, init_lamda, init_action, B_t, time_t, remain_auc_num)  # 1时段
-            action = RL.choose_best_action(state_t)
+            action = RL.choose_action(state_t)
 
             lamda_t_next = lamda_t * (1 + action)
             action_t_next = action
@@ -372,7 +406,185 @@ def run_test(budget_para, original_ctr):
         else:
             state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                                                                          temp_lamda_t_next, action_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
-            action = RL.choose_best_action(state_t)
+            action = RL.choose_action(state_t)
+
+            lamda_t_next = lamda_t * (1 + action)
+            action_t_next = action
+
+            if t == 95:
+                done = 1
+
+            temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
+
+            if t + 1 == 95:
+                RL.reset_epsilon(0.05)
+                lamda_record.append(lamda_t_next)
+
+        RL.control_epsilon(t + 1)
+
+        action_records[t] = action
+
+        episode_clks += t_clks
+        episode_real_clks += t_real_clks
+        episode_imps += t_real_imps
+        episode_win_imps += t_win_imps
+        episode_spent += t_spent
+        episode_profit += reward_t
+
+        if done == 1:
+            break
+
+    print('测试集中：真实曝光数{}, 赢标数{}, 共获得{}个点击, 真实点击数{}, '
+          '利润{}, 预算{}, 花费{}, CPM{}, {}'.format(episode_imps, episode_win_imps, episode_clks, episode_real_clks,
+                                               episode_profit, budget, episode_spent, episode_spent / episode_win_imps, datetime.datetime.now()))
+
+    temp_result = [episode_imps, episode_win_imps, episode_clks, episode_real_clks,
+                             episode_profit, budget, episode_spent, episode_spent / episode_win_imps]
+
+    return temp_result, action_records
+
+def run_all_test(budget_para, original_ctr):
+    test_data = pd.read_csv('data/' + data_type['campaign_id'] + '/test_DRLB_all_sample.csv', header=None).drop([0])
+    test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
+    test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
+
+    # config['test_budget'] = np.sum(test_data.iloc[:, 2])
+    config['test_budget'] = 32000000
+
+    config['test_auc_num'] = len(test_data)
+
+    auc_num = config['test_auc_num']
+    budget = config['test_budget'] * budget_para
+
+    B_t = [0 for i in range(96)]
+    B_t[0] = budget * budget_para
+
+    remain_auc_num = [0 for i in range(96)]
+    remain_auc_num[0] = auc_num
+
+    RL.reset_epsilon(0.9)  # init epsilon value
+
+    init_lamda = choose_init_lamda(data_type['campaign_id'], original_ctr)
+    episode_clks = 0
+    episode_real_clks = 0
+    episode_imps = 0
+    episode_win_imps = 0
+    episode_spent = 0
+    episode_profit = 0
+
+    temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = 0, [], []
+
+    action_records = [-1 for _ in range(96)]
+
+    lamda_record = [init_lamda]
+    action_t_next = 0
+    for t in range(96):
+        time_t = t
+
+        # auc_data[0] 是否有点击；auc_data[1] pCTR；auc_data[2] 市场价格； auc_data[3] t划分[1-96]
+        auc_t_datas = test_data[test_data.iloc[:, 3].isin([t + 1])]  # t时段的数据
+        auc_t_data_pctrs = auc_t_datas.iloc[:, 1].values  # ctrs
+        if t == 0:
+            init_action = 0
+            state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, init_lamda, init_action, B_t, time_t, remain_auc_num)  # 1时段
+            action = RL.choose_action(state_t)
+
+            lamda_t_next = lamda_t * (1 + action)
+            action_t_next = action
+            temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
+        else:
+            state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
+                                                                         temp_lamda_t_next, action_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
+            action = RL.choose_action(state_t)
+
+            lamda_t_next = lamda_t * (1 + action)
+            action_t_next = action
+
+            if t == 95:
+                done = 1
+
+            temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
+
+            if t + 1 == 95:
+                RL.reset_epsilon(0.05)
+                lamda_record.append(lamda_t_next)
+
+        RL.control_epsilon(t + 1)
+
+        action_records[t] = action
+
+        episode_clks += t_clks
+        episode_real_clks += t_real_clks
+        episode_imps += t_real_imps
+        episode_win_imps += t_win_imps
+        episode_spent += t_spent
+        episode_profit += reward_t
+
+        if done == 1:
+            break
+
+    print('测试集中：真实曝光数{}, 赢标数{}, 共获得{}个点击, 真实点击数{}, '
+          '利润{}, 预算{}, 花费{}, CPM{}, {}'.format(episode_imps, episode_win_imps, episode_clks, episode_real_clks,
+                                               episode_profit, budget, episode_spent, episode_spent / episode_win_imps, datetime.datetime.now()))
+
+    temp_result = [episode_imps, episode_win_imps, episode_clks, episode_real_clks,
+                             episode_profit, budget, episode_spent, episode_spent / episode_win_imps]
+
+    return temp_result, action_records
+
+def run_test(budget_para, original_ctr):
+    test_data = pd.read_csv('data/' + data_type['campaign_id'] + '/test_DRLB_data.csv', header=None).drop([0])
+    test_data.iloc[:, [0, 2, 3]] = test_data.iloc[:, [0, 2, 3]].astype(int)
+    test_data.iloc[:, [1]] = test_data.iloc[:, [1]].astype(float)
+
+    # config['test_budget'] = np.sum(test_data.iloc[:, 2])
+    config['test_budget'] = 32000000
+
+    config['test_auc_num'] = len(test_data)
+
+    auc_num = config['test_auc_num']
+    budget = config['test_budget'] * budget_para
+
+    B_t = [0 for i in range(96)]
+    B_t[0] = budget * budget_para
+
+    remain_auc_num = [0 for i in range(96)]
+    remain_auc_num[0] = auc_num
+
+    RL.reset_epsilon(0.9)  # init epsilon value
+
+    init_lamda = choose_init_lamda(data_type['campaign_id'], original_ctr)
+    episode_clks = 0
+    episode_real_clks = 0
+    episode_imps = 0
+    episode_win_imps = 0
+    episode_spent = 0
+    episode_profit = 0
+
+    temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = 0, [], []
+
+    action_records = [-1 for _ in range(96)]
+
+    lamda_record = [init_lamda]
+    action_t_next = 0
+    for t in range(96):
+        time_t = t
+
+        # auc_data[0] 是否有点击；auc_data[1] pCTR；auc_data[2] 市场价格； auc_data[3] t划分[1-96]
+        auc_t_datas = test_data[test_data.iloc[:, 3].isin([t + 1])]  # t时段的数据
+        auc_t_data_pctrs = auc_t_datas.iloc[:, 1].values  # ctrs
+        if t == 0:
+            init_action = 0
+            state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs, init_lamda, init_action, B_t, time_t, remain_auc_num)  # 1时段
+            action = RL.choose_action(state_t)
+
+            lamda_t_next = lamda_t * (1 + action)
+            action_t_next = action
+            temp_lamda_t_next, temp_B_t_next, temp_remain_t_auctions = lamda_t_next, B_t, t_remain_auc_num
+        else:
+            state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
+                                                                         temp_lamda_t_next, action_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
+            action = RL.choose_action(state_t)
 
             lamda_t_next = lamda_t * (1 + action)
             action_t_next = action

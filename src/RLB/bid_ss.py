@@ -6,7 +6,7 @@ from src.data_type import config as data_type
 obj_type = "clk"
 clk_vp = 1
 N = 1000
-c0_a = [1/8] # no 4 8
+c0_a = [1/16] # no 4 8
 gamma = 1
 
 src = "ipinyou"
