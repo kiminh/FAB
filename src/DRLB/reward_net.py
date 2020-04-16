@@ -18,25 +18,22 @@ class Net(nn.Module):
     def __init__(self, feature_numbers, action_numbers, reward_numbers):
         super(Net, self).__init__()
 
-        # 第一层网络的神经元个数
-        neuron_numbers_1 = 100
-        # 第二层网络的神经元个数
-        neuron_numbers_2 = 100
-        # 第三层网络的神经元个数
-        neuron_numbers_3 = 100
+        deep_input_dims = feature_numbers + action_numbers
+        self.bn_input = nn.BatchNorm1d(deep_input_dims)
+        layers = list()
+        neuron_nums = [100, 100, 100]
+        for neuron_num in neuron_nums:
+            layers.append(nn.Linear(deep_input_dims, neuron_num))
+            layers.append(nn.BatchNorm1d(neuron_num))
+            layers.append(nn.ReLU())
+            deep_input_dims = neuron_num
+        layers.append(nn.Linear(deep_input_dims, reward_numbers))
 
-        self.fc1 = nn.Linear(feature_numbers + action_numbers, neuron_numbers_1)
-        self.fc2 = nn.Linear(neuron_numbers_1, neuron_numbers_2)
-        self.fc3 = nn.Linear(neuron_numbers_2, neuron_numbers_3)
-        self.out = nn.Linear(neuron_numbers_3, reward_numbers)
+        self.mlp = nn.Sequential(*layers)
 
     def forward(self, input):
-        x_1 = F.relu(self.fc1(input))
-        x_2 = F.relu(self.fc2(x_1))
-        x_3 = F.relu(self.fc2(x_2))
-        rewards_value = self.out(x_3)
-
-        return rewards_value
+        actions_value = self.mlp(self.bn_input(input))
+        return actions_value
 
 class RewardNet:
     def __init__(
@@ -80,8 +77,10 @@ class RewardNet:
         # 统一 observation 的 shape (1, size_of_observation)
         state_action = torch.unsqueeze(torch.FloatTensor(state_action), 0).to(self.device)
 
+        self.model_reward.eval()
         with torch.no_grad():
             model_reward = self.model_reward.forward(state_action).cpu().numpy()
+
         return model_reward
 
     def store_S_pair(self, state_action_pair, reward):

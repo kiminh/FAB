@@ -44,29 +44,13 @@ class Actor(nn.Module):
         self.fc2 = nn.Linear(neural_nums_a_1, neural_nums_a_2)
         self.out = nn.Linear(neural_nums_a_2, action_numbers)
 
-        self.batch_norm_input = nn.BatchNorm1d(feature_numbers,
-                     eps=1e-05,
-                     momentum=0.1,
-                     affine=True,
-                     track_running_stats=True)
+        self.batch_norm_input = nn.BatchNorm1d(feature_numbers)
 
-        self.batch_norm_layer_1 = nn.BatchNorm1d(neural_nums_a_1,
-                     eps=1e-05,
-                     momentum=0.1,
-                     affine=True,
-                     track_running_stats=True)
+        self.batch_norm_layer_1 = nn.BatchNorm1d(neural_nums_a_1)
 
-        self.batch_norm_layer_2 = nn.BatchNorm1d(neural_nums_a_2,
-                                                 eps=1e-05,
-                                                 momentum=0.1,
-                                                 affine=True,
-                                                 track_running_stats=True)
+        self.batch_norm_layer_2 = nn.BatchNorm1d(neural_nums_a_2)
 
-        self.batch_norm_action = nn.BatchNorm1d(action_numbers,
-                     eps=1e-05,
-                     momentum=0.1,
-                     affine=True,
-                     track_running_stats=True)
+        self.batch_norm_action = nn.BatchNorm1d(action_numbers)
 
     def forward(self, input):
         x = F.relu(self.batch_norm_layer_1(self.fc1(self.batch_norm_input(input))))
@@ -83,23 +67,11 @@ class Critic(nn.Module):
         self.fc_q = nn.Linear(2 * neural_nums_c_1, neural_nums_c_2)
         self.fc_ = nn.Linear(neural_nums_c_2, action_numbers)
 
-        self.batch_norm_input = nn.BatchNorm1d(feature_numbers,
-                                               eps=1e-05,
-                                               momentum=0.1,
-                                               affine=True,
-                                               track_running_stats=True)
+        self.batch_norm_input = nn.BatchNorm1d(feature_numbers)
 
-        self.batch_norm_layer_1 = nn.BatchNorm1d(neural_nums_c_1,
-                                               eps=1e-05,
-                                               momentum=0.1,
-                                               affine=True,
-                                               track_running_stats=True)
+        self.batch_norm_layer_1 = nn.BatchNorm1d(neural_nums_c_1)
 
-        self.batch_norm_layer_2 = nn.BatchNorm1d(neural_nums_c_2,
-                                                 eps=1e-05,
-                                                 momentum=0.1,
-                                                 affine=True,
-                                                 track_running_stats=True)
+        self.batch_norm_layer_2 = nn.BatchNorm1d(neural_nums_c_2)
 
     def forward(self, input, action):
         xs = F.relu(self.fc_s(self.batch_norm_input(input)))

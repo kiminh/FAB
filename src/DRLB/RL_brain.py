@@ -15,26 +15,25 @@ def setup_seed(seed):
 setup_seed(1)
 
 class Net(nn.Module):
-    def __init__(self, feature_numbers, action_numbers):
+    def __init__(self, feature_numbers, action_nums):
         super(Net, self).__init__()
 
-        # 第一层网络的神经元个数，第二层神经元的个数为动作数组的个数
-        neuron_numbers_1 = 100
-        # 第二层网络的神经元个数，第二层神经元的个数为动作数组的个数
-        neuron_numbers_2 = 100
-        # 第三层网络的神经元个数，第四层神经元的个数为动作数组的个数
-        neuron_numbers_3 = 100
+        deep_input_dims = feature_numbers
+        self.bn_input = nn.BatchNorm1d(deep_input_dims)
 
-        self.fc1 = nn.Linear(feature_numbers, neuron_numbers_1)
-        self.fc2 = nn.Linear(neuron_numbers_1, neuron_numbers_2)
-        self.fc3 = nn.Linear(neuron_numbers_2, neuron_numbers_3)
-        self.out = nn.Linear(neuron_numbers_3, action_numbers)
+        layers = list()
+        neuron_nums = [100, 100, 100]
+        for neuron_num in neuron_nums:
+            layers.append(nn.Linear(deep_input_dims, neuron_num))
+            layers.append(nn.BatchNorm1d(neuron_num))
+            layers.append(nn.ReLU())
+            deep_input_dims = neuron_num
+        layers.append(nn.Linear(deep_input_dims, action_nums))
+
+        self.mlp = nn.Sequential(*layers)
 
     def forward(self, input):
-        x_1 = F.relu(self.fc1(input))
-        x_2 = F.relu(self.fc2(x_1))
-        x_3 = F.relu(self.fc3(x_2))
-        actions_value = self.out(x_3)
+        actions_value = self.mlp(self.bn_input(input))
         return actions_value
 
 # 定义DeepQNetwork
@@ -111,6 +110,7 @@ class DRLB:
         state = torch.unsqueeze(torch.FloatTensor(state), 0).to(self.device)
 
         random_probability = max(self.epsilon, 0.5) # 论文的取法
+        self.eval_net.eval()
         with torch.no_grad():
             if np.random.uniform() > random_probability:
                 # 让 eval_net 神经网络生成所有 action 的值, 并选择值最大的 action
@@ -122,6 +122,8 @@ class DRLB:
             else:
                 index = np.random.randint(0, self.action_numbers)
                 action = self.action_space[index]  # 随机选择动作
+        self.eval_net.train()
+
         return action
 
     # 选择最优动作
@@ -129,6 +131,7 @@ class DRLB:
         # 统一 state 的 shape (1, size_of_state)
         state = torch.unsqueeze(torch.FloatTensor(state), 0).to(self.device)
 
+        self.eval_net.eval()
         with torch.no_grad():
             actions_value = self.eval_net.forward(state)
             action_index = torch.max(actions_value, 1)[1].data.cpu().numpy()[0]

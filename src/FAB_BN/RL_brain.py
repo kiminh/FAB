@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import random
+import copy
 from src.FAB_BN.Actor_Critic import Actor, Critic
 
 def setup_seed(seed):
@@ -39,17 +40,17 @@ class DDPG():
 
         if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
-        self.memory = np.zeros((self.memory_size, self.feature_numbers * 2 + self.action_numbers + 1))
+        self.memory = np.zeros((self.memory_size, self.feature_numbers * 2 + self.action_numbers + 1 + 1))
 
         self.Actor = Actor(self.feature_numbers, self.action_numbers).to(self.device)
         self.Critic = Critic(self.feature_numbers, self.action_numbers).to(self.device)
 
-        self.Actor_ = Actor(self.feature_numbers, self.action_numbers).to(self.device)
-        self.Critic_ = Critic(self.feature_numbers, self.action_numbers).to(self.device)
+        self.Actor_ = copy.deepcopy(self.Actor)
+        self.Critic_ = copy.deepcopy(self.Critic)
 
         # 优化器
         self.optimizer_a = torch.optim.Adam(self.Actor.parameters(), lr=self.lr_A)
-        self.optimizer_c = torch.optim.Adam(self.Critic.parameters(), lr=self.lr_C, weight_decay=1e-3)
+        self.optimizer_c = torch.optim.Adam(self.Critic.parameters(), lr=self.lr_C, weight_decay=1e-2)
 
         self.loss_func = nn.MSELoss(reduction='mean')
 
@@ -83,10 +84,11 @@ class DDPG():
 
         b_s = torch.FloatTensor(batch_memory[:, :self.feature_numbers]).to(self.device)
         b_a = torch.FloatTensor(batch_memory[:, self.feature_numbers: self.feature_numbers + self.action_numbers]).to(self.device)
-        b_r = torch.FloatTensor(batch_memory[:, -self.feature_numbers - 1: -self.feature_numbers]).to(self.device)
-        b_s_ = torch.FloatTensor(batch_memory[:, -self.feature_numbers:]).to(self.device)
+        b_r = torch.FloatTensor(batch_memory[:, self.feature_numbers + self.action_numbers]).to(self.device)
+        b_s_ = torch.FloatTensor(batch_memory[:, self.feature_numbers + self.action_numbers + 1: 2 * self.feature_numbers + self.action_numbers + 1]).to(self.device)
+        b_dones = torch.FloatTensor(batch_memory[:, -1]).unsqueeze(1).to(self.device)
 
-        q_target = b_r + self.gamma * self.Critic_.forward(b_s_, self.Actor_(b_s_)).to(self.device)
+        q_target = b_r + self.gamma * torch.mul(self.Critic_.forward(b_s_, self.Actor_(b_s_)).to(self.device), b_dones)
         q = self.Critic.forward(b_s, b_a).to(self.device)
         td_error = F.smooth_l1_loss(q, q_target.detach())
         self.optimizer_c.zero_grad()

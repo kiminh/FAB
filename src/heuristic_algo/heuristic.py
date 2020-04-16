@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     to_train_results(campaign, data_type['type'])  # 生成训练结果
 
-    fi = open('result/' + campaign + data_type['type'] +  '/results_train.txt', 'r') # rtb.result.1458.txt
+    fi = open('result/' + campaign + data_type['type'] + '/results_train.txt', 'r') # rtb.result.1458.txt
     fo = open('result/' + campaign + data_type['type'] + '/results_train.txt'.replace('.txt', '.best.perf.txt'), 'w')
     first = True
 

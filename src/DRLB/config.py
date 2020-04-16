@@ -16,7 +16,7 @@ config = {
     'e_greedy': 1,
     'learning_rate': 0.001,
     'pg_learning_rate': 1e-3,
-    'reward_decay': 1,
+    'reward_decay': 0.99,
     'feature_num': 7,
     'state_feature_num': 7,
     'budget_para': [1/2],
@@ -25,5 +25,5 @@ config = {
     'relace_target_iter': 100,
     'memory_size': 100000,
     'batch_size': 32,
-    'device': 'cpu:0',
+    'device': 'cuda:0',
 }

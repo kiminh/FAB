@@ -139,6 +139,8 @@ def run_env(budget_para):
         e_no_clk_aucs = [0 for i in range(fraction_type)]
         e_no_clk_no_win_aucs = [0 for i in range(fraction_type)]
 
+        e_dones = False
+
         actions = [0 for i in range(fraction_type)]
         init_action = 0
         next_action = 0
@@ -159,7 +161,7 @@ def run_env(budget_para):
             if t == 0:
                 state = np.array([1, 0, 0, 0])  # current_time_slot, budget_left_ratio, cost_t_ratio, ctr_t, win_rate_t
                 action = RL.choose_action(state)
-                action = np.clip(np.random.normal(action, exploration_rate), -0.99, 0.99)
+                action = np.clip(action + np.random.normal(action, exploration_rate), -0.99, 0.99)
                 init_action = action
                 bids = auc_datas[:, config['data_pctr_index']] * eCPC / (1 + init_action)
                 bids = np.where(bids >= 300, 300, bids)
@@ -235,6 +237,7 @@ def run_env(budget_para):
                 no_win_imps_market_prices_t = 0
                 for i in range(len(auc_datas)):
                     if temp_cost >= (budget - np.sum(e_cost[:t])):
+                        e_dones = True
                         break
                     current_data = auc_datas[i, :]
                     temp_clk = int(current_data[config['data_clk_index']])
@@ -296,7 +299,7 @@ def run_env(budget_para):
                     [avg_time_spend, cost_t_ratio, ctr_t, win_rate_t])
             action_ = RL.choose_action(state_)
 
-            action_ = np.clip(np.random.normal(action_, exploration_rate), -0.99, 0.99)
+            action_ = np.clip(action_ + np.random.normal(action_, exploration_rate), -0.99, 0.99)
             next_action = action_
 
             reward_t = adjust_reward(len(auc_datas), e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, real_clks,
@@ -305,7 +308,11 @@ def run_env(budget_para):
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t)
             reward = reward_t
             e_reward[t] = reward
-            transition = np.hstack((state.tolist(), action, reward, state_.tolist()))
+
+            if t == fraction_type - 1:
+                e_dones = True
+
+            transition = np.hstack((state.tolist(), action, reward, state_.tolist(), e_dones))
             RL.store_transition(transition)
 
             if np.sum(e_cost) >= budget:
