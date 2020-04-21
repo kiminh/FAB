@@ -37,46 +37,103 @@ neural_nums_a_2 = config['neuron_nums_a_2']
 neural_nums_c_1 = config['neuron_nums_c_1']
 neural_nums_c_2 = config['neuron_nums_c_2']
 
+def hidden_init(layer):
+    # source: The other layers were initialized from uniform distributions
+    # [− 1/sqrt(f) , 1/sqrt(f) ] where f is the fan-in of the layer
+    fan_in = layer.weight.data.size()[0]
+    lim = 1. / np.sqrt(fan_in)
+    return (0, lim)
+
 class Actor(nn.Module):
     def __init__(self, feature_numbers, action_numbers):
         super(Actor, self).__init__()
-        self.fc1 = nn.Linear(feature_numbers, neural_nums_a_1)
-        self.fc2 = nn.Linear(neural_nums_a_1, neural_nums_a_2)
-        self.out = nn.Linear(neural_nums_a_2, action_numbers)
 
-        self.batch_norm_input = nn.BatchNorm1d(feature_numbers)
+        neuron_nums = [neural_nums_a_1, neural_nums_a_2]
+        self.batch_input = nn.BatchNorm1d(feature_numbers)
+        self.batch_input.weight.data.fill_(1)
+        self.batch_input.bias.data.fill_(0)
 
-        self.batch_norm_layer_1 = nn.BatchNorm1d(neural_nums_a_1)
+        self.mlp = nn.Sequential(
+            nn.Linear(feature_numbers, neuron_nums[0]),
+            # nn.BatchNorm1d(neuron_nums[0]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[0], neuron_nums[1]),
+            # nn.BatchNorm1d(neuron_nums[1]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[1], action_numbers),
+            # nn.BatchNorm1d(action_numbers),
+            nn.Tanh()
+        )
 
-        self.batch_norm_layer_2 = nn.BatchNorm1d(neural_nums_a_2)
+        self.reset_parameters()
 
-        self.batch_norm_action = nn.BatchNorm1d(action_numbers)
+    def reset_parameters(self):
+        # self.mlp[1].weight.data.uniform_(*hidden_init(self.mlp[1]))
+        #
+        # self.mlp[3].weight.data.uniform_(*hidden_init(self.mlp[3]))
+
+        self.mlp[4].weight.data.uniform_(-0.003, 0.003)
 
     def forward(self, input):
-        x = F.relu(self.batch_norm_layer_1(self.fc1(self.batch_norm_input(input))))
-        x_ = F.relu(self.batch_norm_layer_2(self.fc2(x)))
-        out = torch.tanh(self.batch_norm_action(self.out(x_)))
+        bn_input = self.batch_input(input)
+        out = self.mlp(bn_input)
 
         return out
 
 class Critic(nn.Module):
     def __init__(self, feature_numbers, action_numbers):
         super(Critic, self).__init__()
-        self.fc_s = nn.Linear(feature_numbers, neural_nums_c_1)
-        self.fc_a = nn.Linear(action_numbers, neural_nums_c_1)
-        self.fc_q = nn.Linear(2 * neural_nums_c_1, neural_nums_c_2)
-        self.fc_ = nn.Linear(neural_nums_c_2, action_numbers)
 
-        self.batch_norm_input = nn.BatchNorm1d(feature_numbers)
+        self.batch_input = nn.BatchNorm1d(feature_numbers)
+        self.batch_input.weight.data.fill_(1)
+        self.batch_input.bias.data.fill_(0)
 
-        self.batch_norm_layer_1 = nn.BatchNorm1d(neural_nums_c_1)
+        neuron_nums = [neural_nums_c_1, neural_nums_c_2]
+        self.mlp_1 = nn.Sequential(
+            nn.Linear(feature_numbers + action_numbers, neuron_nums[0]),
+            # nn.BatchNorm1d(neuron_nums[0]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[0], neuron_nums[1]),
+            # nn.BatchNorm1d(neuron_nums[1]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[1], 1)
+        )
 
-        self.batch_norm_layer_2 = nn.BatchNorm1d(neural_nums_c_2)
+        self.mlp_2 = nn.Sequential(
+            nn.Linear(feature_numbers + action_numbers, neuron_nums[0]),
+            # nn.BatchNorm1d(neuron_nums[0]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[0], neuron_nums[1]),
+            # nn.BatchNorm1d(neuron_nums[1]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[1], 1)
+        )
 
-    def forward(self, input, action):
-        xs = F.relu(self.fc_s(self.batch_norm_input(input)))
-        x = torch.cat([self.batch_norm_layer_1(xs), self.fc_a(action)], dim=1)
-        q = F.relu(self.batch_norm_layer_2(self.fc_q(x)))
-        q = self.fc_(q)
+        # self.reset_parameters()
 
-        return q
+    def reset_parameters(self):
+        self.mlp_1[0].weight.data.uniform_(*hidden_init(self.mlp_1[0]))
+        self.mlp_2[0].weight.data.uniform_(*hidden_init(self.mlp_2[0]))
+
+        self.mlp_1[2].weight.data.uniform_(*hidden_init(self.mlp_1[2]))
+        self.mlp_2[2].weight.data.uniform_(*hidden_init(self.mlp_2[2]))
+
+        # self.mlp_1[4].weight.data.uniform_(-0.003, 0.003)
+        # self.mlp_2[4].weight.data.uniform_(-0.003, 0.003)
+
+    def evaluate(self, input, action):
+        bn_input = self.batch_input(input)
+        cat_x = torch.cat([bn_input, action], dim=-1)
+
+        q_1 = self.mlp_1(cat_x)
+        q_2 = self.mlp_2(cat_x)
+
+        return q_1, q_2
+
+    def evaluate_1(self, input, action):
+        bn_input = self.batch_input(input)
+        cat_x = torch.cat([bn_input, action], dim=-1)
+
+        q_1 = self.mlp_1(cat_x)
+
+        return q_1
