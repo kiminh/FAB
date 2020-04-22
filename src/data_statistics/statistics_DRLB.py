@@ -466,7 +466,7 @@ for k in range(time_slots):
     for l in range(4):
         time_slot_indexs.setdefault(times_of_four - l, int(times_of_four / 4))
 
-budget_paras = [0.5, 0.25, 0.125, 0.0625]
+budget_paras = [0.0625]
 campaign_id = data_type['campaign_id']
 project_name = 'DRLB'
 

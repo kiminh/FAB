@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 import random
+import copy
 
 def setup_seed(seed):
     torch.manual_seed(seed)
@@ -20,17 +21,22 @@ class Net(nn.Module):
 
         deep_input_dims = feature_numbers
         self.bn_input = nn.BatchNorm1d(deep_input_dims)
+        self.bn_input.weight.data.fill_(1)
+        self.bn_input.bias.data.fill_(0)
 
-        layers = list()
         neuron_nums = [100, 100, 100]
-        for neuron_num in neuron_nums:
-            layers.append(nn.Linear(deep_input_dims, neuron_num))
-            layers.append(nn.BatchNorm1d(neuron_num))
-            layers.append(nn.ReLU())
-            deep_input_dims = neuron_num
-        layers.append(nn.Linear(deep_input_dims, action_nums))
-
-        self.mlp = nn.Sequential(*layers)
+        self.mlp = nn.Sequential(
+            nn.Linear(deep_input_dims, neuron_nums[0]),
+            nn.BatchNorm1d(neuron_nums[0]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[0], neuron_nums[1]),
+            nn.BatchNorm1d(neuron_nums[1]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[1], neuron_nums[2]),
+            nn.BatchNorm1d(neuron_nums[2]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[2], action_nums)
+        )
 
     def forward(self, input):
         actions_value = self.mlp(self.bn_input(input))
@@ -79,11 +85,11 @@ class DRLB:
         self.memory = np.zeros((self.memory_size, self.feature_numbers * 2 + 3))  # 状态的特征数*2加上动作和奖励
 
         # 创建target_net（目标神经网络），eval_net（训练神经网络）
-        self.eval_net, self.target_net = Net(self.feature_numbers, self.action_numbers).to(self.device), Net(
-            self.feature_numbers, self.action_numbers).to(self.device)
+        self.eval_net = Net(self.feature_numbers, self.action_numbers).to(self.device)
 
+        self.target_net = copy.deepcopy(self.eval_net)
         # 优化器
-        self.optimizer = torch.optim.Adam(self.eval_net.parameters())
+        self.optimizer = torch.optim.RMSprop(self.eval_net.parameters(), momentum=0.95, weight_decay=1e-5)
         # 损失函数为，均方损失函数
         self.loss_func = nn.MSELoss()
 
@@ -153,9 +159,9 @@ class DRLB:
         # 从memory中随机抽取batch_size的数据
         if self.memory_counter > self.memory_size:
             # replacement 代表的意思是抽样之后还放不放回去，如果是False的话，那么出来的三个数都不一样，如果是True的话， 有可能会出现重复的，因为前面的抽的放回去了
-            sample_index = np.random.choice(self.memory_size, size=self.batch_size, replace=False)
+            sample_index = random.sample(range(self.memory_size), self.batch_size)
         else:
-            sample_index = np.random.choice(self.memory_counter, size=self.batch_size, replace=False)
+            sample_index = random.sample(range(self.memory_counter), self.batch_size)
 
         batch_memory = self.memory[sample_index, :]
 

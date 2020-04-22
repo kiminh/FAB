@@ -221,7 +221,7 @@ def run_env(budget_para):
                 init_action = 0
                 state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,
                                                                              init_lamda, init_action, B_t, time_t, remain_auc_num)  # 1时段
-                action = RL.choose_action(state_t)
+                action = RL.choose_best_action(state_t)
                 auc_t_datas_next = train_data[train_data.iloc[:, 3].isin([t + 2])]  # t时段的数据
                 auc_t_data_pctrs_next = auc_t_datas_next.iloc[:, 1].values  # ctrs
 
@@ -237,7 +237,7 @@ def run_env(budget_para):
             else:
                 state_t, lamda_t, B_t, reward_t, origin_reward_t, profit_t, t_clks, bid_arrays, t_remain_auc_num, t_win_imps, t_real_imps, t_real_clks, t_spent, done = state_(budget, auc_num, auc_t_datas, auc_t_data_pctrs,temp_lamda_t_next, action_t_next, temp_B_t_next, time_t, temp_remain_t_auctions)
 
-                action = RL.choose_action(state_t)
+                action = RL.choose_best_action(state_t)
 
                 auc_t_datas_next = train_data[train_data.iloc[:, 3].isin([t + 2])]  # t时段的数据
                 auc_t_data_pctrs_next = auc_t_datas_next.iloc[:, 1].values  # ctrs
@@ -261,7 +261,7 @@ def run_env(budget_para):
 
                 temp_state_t_next, temp_lamda_t_next, temp_B_t_next, temp_reward_t_next, temp_profit_t_next, temp_remain_t_auctions\
                     = state_t_next, lamda_t_next, B_t_next, reward_t_next, profit_t_next, remain_auc_num_next
-
+            # print(action)
             transition = np.hstack((state_t, action, reward_t, state_t_next, done))
             RL.store_transition(transition) # 存储在DRLB的经验池中
 

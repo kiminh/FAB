@@ -67,7 +67,7 @@ class DDPG():
         self.Actor.eval()
         with torch.no_grad():
             action = self.Actor.forward(state)
-            action = torch.clamp(action + torch.randn_like(action) * 0.1, -0.99, 0.99)
+            action = torch.clamp(action + torch.randn_like(action) * 0.2, -0.99, 0.99)
 
         self.Actor.train()
 
@@ -106,7 +106,7 @@ class DDPG():
         with torch.no_grad():
             a_b_s_ = self.Actor_(b_s_)
             q1_target, q2_target = \
-                self.Critic_.evaluate(b_s_, torch.clamp(a_b_s_ + torch.clamp(torch.randn_like(a_b_s_) * 0.2, -0.5, 0.5), -0.99, 0.99))
+                self.Critic_.evaluate(b_s_, torch.clamp(a_b_s_ + torch.randn_like(a_b_s_) * 0.2, -0.99, 0.99))
             # print(q1_target, q2_target)
             q_target = torch.min(q1_target, q2_target)
             q_target = b_r + self.gamma * torch.mul(q_target, 1 - b_dones)
@@ -125,6 +125,8 @@ class DDPG():
         a_loss_r = 0
         if self.learn_iter % 10 == 0:
             a_b_s = torch.clamp(self.Actor(b_s), -0.99, 0.99)
+            # print(a_b_s)
+            # print(a_b_s)
             a_loss = -self.Critic.evaluate_1(b_s, a_b_s).mean() + (a_b_s ** 2).mean() * 1e-2
 
             a_loss_r = a_loss.item()

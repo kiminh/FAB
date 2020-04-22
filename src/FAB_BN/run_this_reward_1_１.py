@@ -75,41 +75,31 @@ def choose_eCPC(campaign, original_ctr):
 #
 #     return reward_t / n
 
-def adjust_reward(auc_len, sum_market_price, market_prices, real_hour_clks, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, e_clks, real_clks,
+def adjust_reward(auc_len, sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, e_clks, real_clks,
                   e_lose_imp_with_clk_value,
                   e_clk_aucs,
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t):
     if auc_len > 0:
-        reward_degree = (1 - np.mean(np.true_divide(np.subtract(bid_win_t, market_price_win_t), bid_win_t)))
-        reward_win_imp_with_clk = ((e_clks[t] / real_clks[
-            t])) if reward_degree > 0 and real_clks[t] > 0 else 1e1
-        reward_win_imp_with_clk = reward_win_imp_with_clk if real_clks[t] > 0 else 0
+        reward_win_imp_with_clk = e_clks[t] / real_clks[
+            t] if real_clks[t] > 0 else 0
 
-        temp_rate = (e_clk_no_win_aucs[t] / e_clk_aucs[t]) if e_clk_aucs[t] > 0 else 1
-        punish_no_win_clk_rate = 1 - temp_rate if temp_rate != 1 else 1
-        base_punishment = - (real_clks[t] - e_clks[t]) / real_clks[t] if real_clks[t] > 0 else 0
-        reward_lose_imp_with_clk = base_punishment
-
-        # base_encourage = e_lose_imp_without_clk_cost[
-        #                      t] / no_win_imps_market_prices_t if no_win_imps_market_prices_t > 0 else 0
-        # encourage_rate = e_no_clk_no_win_aucs[t] / e_no_clk_aucs[t] if e_no_clk_aucs[t] > 0 else 0
-        # reward_lose_imp_without_clk = base_encourage * encourage_rate if encourage_rate > 0 else 0
+        reward_lose_imp_with_clk = - (real_clks[t] - e_clks[t]) / real_clks[t] if real_clks[t] > 0 else 0
 
         reward_positive = reward_win_imp_with_clk
         reward_negative = reward_lose_imp_with_clk
-        # print(reward_negative, reward_positive)
-        # print(reward_win_imp_with_clk, reward_lose_imp_without_clk)
-        # print(reward_win_imp_without_clk, reward_lose_imp_with_clk)
 
-        rate = ((budget - np.sum(e_cost[:t])) / budget) / ((total_clks - np.sum(e_clks[:t])) / total_clks)
+        rate = ((budget - np.sum(e_cost[:t+1])) / budget) / ((total_clks - np.sum(e_clks[:t+1])) / total_clks)
         # print('1', rate)
-        reward_t = (reward_positive + reward_negative) * rate
+
+        rate_1 = np.sum(e_cost[:t+1]) / sum_to_market_prices[t]
+
+        reward_t = reward_positive + reward_negative - rate_1
         # print('2', reward_t)
         # print(reward_positive, reward_negative)
     else:
         reward_t = 0
 
-    n = 1e2 # 奖励函数type1的缩放因子
+    n = 1e3 # 奖励函数type1的缩放因子
 
     return reward_t / n
 
@@ -154,10 +144,18 @@ def run_env(budget_para):
     real_hour_clks = []
     market_prices = []
     sum_market_price = np.sum(train_data[:, config['data_marketprice_index']])
+
     for i in range(data_type['fraction_type']):
         real_hour_clks.append(
             np.sum(train_data[train_data[:, config['data_fraction_index']] == i][:, config['data_clk_index']]))
         market_prices.append(train_data[train_data[:, config['data_fraction_index']] == i][:, config['data_marketprice_index']])
+
+    sum_to_market_prices = [0 for i in range(data_type['fraction_type'])]
+    for i in range(data_type['fraction_type']):
+        if i == 0:
+            sum_to_market_prices[i] = np.sum(market_prices[i])
+        else:
+            sum_to_market_prices[i] = np.sum(market_prices[i]) + sum_to_market_prices[i - 1]
 
     td_error, action_loss = 0, 0
     eCPC = choose_eCPC(data_type['campaign_id'], original_ctr)
@@ -350,7 +348,7 @@ def run_env(budget_para):
             # action_ = np.clip(action_ + np.random.normal(0, 1.0) * 0.1, -0.99, 0.99)
             next_action = action_
 
-            reward_t = adjust_reward(len(auc_datas), sum_market_price, market_prices, real_hour_clks, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, e_clks, real_clks,
+            reward_t = adjust_reward(len(auc_datas), sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, e_clks, real_clks,
                   e_lose_imp_with_clk_value,
                   e_clk_aucs,
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t)
@@ -432,6 +430,13 @@ def test_env(budget, budget_para, test_data, eCPC):
             np.sum(test_data[test_data[:, config['data_fraction_index']] == i][:, config['data_clk_index']]))
         market_prices.append(
             test_data[test_data[:, config['data_fraction_index']] == i][:, config['data_marketprice_index']])
+
+    sum_to_market_prices = [0 for i in range(data_type['fraction_type'])]
+    for i in range(data_type['fraction_type']):
+        if i == 0:
+            sum_to_market_prices[i] = np.sum(market_prices[i])
+        else:
+            sum_to_market_prices[i] = np.sum(market_prices[i]) + sum_to_market_prices[i - 1]
 
     fraction_type = data_type['fraction_type']
     exploration_rate = config['exploration_rate']
@@ -616,7 +621,7 @@ def test_env(budget, budget_para, test_data, eCPC):
         # action_ = np.clip(action_ + np.random.normal(0, 1.0) * 0.1, -0.99, 0.99)
         next_action = action_
 
-        reward_t = adjust_reward(len(auc_datas), sum_market_price, market_prices, real_hour_clks, e_true_value,
+        reward_t = adjust_reward(len(auc_datas), sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value,
                                  e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost,
                                  e_win_imp_without_clk_cost, e_clks, real_clks,
                                  e_lose_imp_with_clk_value,

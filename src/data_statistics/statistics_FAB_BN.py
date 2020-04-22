@@ -101,20 +101,23 @@ def max_train_index(directory, para):
     train_clks = train_results.values[:, [0, 5]]
 
     test_results = pd.read_csv(directory + '/test_episode_results_' + str(para) + '.csv').values
-    test_clks = test_results[:, [0, 4]]
+    test_clks = test_results[:, [0, 5]]
 
     new_test_clks = []
     new_test_results = []
     for i in range(len(test_clks)):
-        test_clk_temp = [test_clks[i, 1] for k in range(10)]
+        test_clk_temp = [test_clks[i, 1] for k in range(1)]
+
         new_test_clks.append(test_clk_temp)
 
         new_test_results.append(test_results[i, [0, 3, 4, 6, 7, 8]].tolist())
 
     new_test_results = np.array(new_test_results)
+
     extend_test_clks = np.array(new_test_clks).flatten()
 
     max_value = train_clks[train_clks[:, 1].argsort()][-1, 1]
+
     max_value_indexs = train_clks[train_clks[:, 1] == max_value]
 
     max_test_value = []
@@ -361,7 +364,7 @@ def ctr_statistics(budget_para, result_directory):
 # 由启发式算法得到最优eCPC 1458-60920.22773088766,38767.41764692851,33229.21512593873, 22152.81008395915‬
 # 3386-77901.22125145316‬,47939.21307781733,35954.409808363,23969.60653890866‬
 
-budget_paras = [0.25]
+budget_paras = [0.5]
 campaign_id = data_type['campaign_id']
 project_name = 'FAB_BN'
 
