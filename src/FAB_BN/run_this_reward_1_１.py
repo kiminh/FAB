@@ -94,7 +94,7 @@ def adjust_reward(auc_len, sum_market_price, market_prices, sum_to_market_prices
         rate_1 = np.sum(e_cost[:t+1]) / sum_to_market_prices[t]
 
         reward_t = reward_positive + reward_negative - rate_1
-        # print('2', reward_t)
+        # print('2', t,  e_cost[:t+1], sum_to_market_prices[t], np.sum(market_prices[t]), rate_1)
         # print(reward_positive, reward_negative)
     else:
         reward_t = 0

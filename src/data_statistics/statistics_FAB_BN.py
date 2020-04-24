@@ -94,7 +94,8 @@ def test_env(directory, budget, budget_para, test_data, eCPC, actions):
 
     records = {'bids': e_bids.tolist(), 'market_prices':e_market_prices.tolist(), 'clks': e_real_labels, 'fractions': e_fractions, 'ctrs': e_ctrs}
     records_df = pd.DataFrame(data=records)
-    records_df.to_csv(directory + '/bids_' + str(budget_para) + '.csv', index=None)
+    columns = ['bids', 'market_prices', 'clks', 'fractions', 'ctrs']
+    records_df[columns].to_csv(directory + '/bids_' + str(budget_para) + '.csv', index=None)
 
 def max_train_index(directory, para):
     train_results = pd.read_csv(directory + '/train_episode_results_' + str(para) + '.csv')
@@ -280,7 +281,7 @@ def action_distribution(budget_para, result_directory):
     print(action_dicts)
     print(market_price_dicts)
 
-    x_axis = action_dicts.keys()
+    x_axis = list(action_dicts.keys())
     action_y_axis = list(action_dicts.values())
     market_price_y_axis = list(market_price_dicts.values())
 
@@ -364,7 +365,7 @@ def ctr_statistics(budget_para, result_directory):
 # 由启发式算法得到最优eCPC 1458-60920.22773088766,38767.41764692851,33229.21512593873, 22152.81008395915‬
 # 3386-77901.22125145316‬,47939.21307781733,35954.409808363,23969.60653890866‬
 
-budget_paras = [0.5]
+budget_paras = [0.0625]
 campaign_id = data_type['campaign_id']
 project_name = 'FAB_BN'
 
@@ -403,11 +404,11 @@ for budget_para in budget_paras:
     print('\n------budget_para:{}------'.format(budget_para))
     list_metrics(pd_test_data, budget_para, result_directory)
 
-print('\n##########Action Distribution##########')
-for budget_para in budget_paras:
-    print('\n------budget_para:{}------'.format(budget_para))
-    action_distribution(budget_para, result_directory)
-
-os.remove('price_nums.csv')
-print('price_nums.csv file has been removed')
+# print('\n##########Action Distribution##########')
+# for budget_para in budget_paras:
+#     print('\n------budget_para:{}------'.format(budget_para))
+#     action_distribution(budget_para, result_directory)
+#
+# os.remove('price_nums.csv')
+# print('price_nums.csv file has been removed')
 

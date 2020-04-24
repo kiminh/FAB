@@ -133,6 +133,9 @@ class DDPG():
             self.optimizer_a.zero_grad()
             a_loss.backward()
             # nn.utils.clip_grad_norm_(self.Actor.parameters(), 0.5)
+            # for name, parms in net.named_parameters():
+            #     print('-->name:', name, '-->grad_requirs:', parms.requires_grad, \
+            #           ' -->grad_value:', parms.grad)
             self.optimizer_a.step()
 
             self.soft_update(self.Actor, self.Actor_)

@@ -200,7 +200,8 @@ def test_env(directory, budget_para, test_data, init_lamda, actions):
     print(np.sum(e_clks))
     records = {'bids': e_bids.tolist(), 'market_prices':e_market_prices.tolist(), 'clks': e_real_labels, 'hours': e_hours, 'ctrs': e_ctrs}
     records_df = pd.DataFrame(data=records)
-    records_df.to_csv(directory + '/bids_' + str(budget_para) + '.csv', index=None)
+    columns = ['bids', 'market_prices', 'clks', 'hours', 'ctrs']
+    records_df[columns].to_csv(directory + '/bids_' + str(budget_para) + '.csv', index=None)
 
 def max_train_index(directory, para):
     train_results = pd.read_csv(directory + '/train_episode_results_' + str(para) + '.csv').values
@@ -384,7 +385,7 @@ def action_distribution(budget_para, result_directory):
     print(action_dicts)
     print(market_price_dicts)
 
-    x_axis = action_dicts.keys()
+    x_axis = list(action_dicts.keys())
     action_y_axis = list(action_dicts.values())
     market_price_y_axis = list(market_price_dicts.values())
 
