@@ -80,10 +80,12 @@ def adjust_reward(auc_len, sum_market_price, market_prices, sum_to_market_prices
                   e_clk_aucs,
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t):
     if auc_len > 0:
-        reward_win_imp_with_clk = e_clks[t] / real_clks[
-            t] if real_clks[t] > 0 else 0
+        clks = np.sum(e_clks[:t+1])
+        real_clks = np.sum(real_clks[:t+1])
 
-        reward_lose_imp_with_clk = - (real_clks[t] - e_clks[t]) / real_clks[t] if real_clks[t] > 0 else 0
+        reward_win_imp_with_clk = clks / real_clks if real_clks > 0 else 0
+
+        reward_lose_imp_with_clk = - (real_clks - clks) / real_clks if real_clks > 0 else 0
 
         reward_positive = reward_win_imp_with_clk
         reward_negative = reward_lose_imp_with_clk

@@ -6,7 +6,9 @@ import os
 from src.data_type import config as data_type
 
 def list_metrics(budget_para, result_directory):
-    bid_records = pd.read_csv(result_directory + '/bids_' + str(budget_para) + '.csv', header=None).drop([0])
+    bid_records = pd.read_csv(result_directory + '/bids_' + str(budget_para) + '.csv')
+    columns = ['actions', 'prices', 'clicks', 'hours', 'thetas']
+    bid_records = bid_records[columns]
     bid_records.iloc[:, 0] = bid_records.iloc[:, 0].astype(float)
     bid_records.iloc[:, 1:4] = bid_records.iloc[:, 1:4].astype(int)
 
@@ -73,7 +75,7 @@ def action_distribution(budget_para, result_directory):
     print(action_dicts)
     print(market_price_dicts)
 
-    x_axis = action_dicts.keys()
+    x_axis = list(action_dicts.keys())
     action_y_axis = list(action_dicts.values())
     market_price_y_axis = list(market_price_dicts.values())
 
@@ -146,7 +148,7 @@ def ctr_statistics(budget_para, result_directory):
 # 由启发式算法得到最优eCPC 1458-60920.22773088766,38767.41764692851,33229.21512593873, 22152.81008395915‬
 # 3386-77901.22125145316‬,47939.21307781733,35954.409808363,23969.60653890866‬
 
-budget_paras = [0.5, 0.25, 0.125, 0.0625]
+budget_paras = [0.0625]
 campaign_id = data_type['campaign_id']
 project_name = 'RLB'
 
@@ -173,10 +175,10 @@ for budget_para in budget_paras:
     print('\n------budget_para:{}------'.format(budget_para))
     list_metrics(budget_para, result_directory)
 
-print('\n##########Action Distribution##########')
-for budget_para in budget_paras:
-    print('\n------budget_para:{}------'.format(budget_para))
-    action_distribution(budget_para, result_directory)
-
-os.remove('price_nums.csv')
-print('price_nums.csv file has been removed')
+# print('\n##########Action Distribution##########')
+# for budget_para in budget_paras:
+#     print('\n------budget_para:{}------'.format(budget_para))
+#     action_distribution(budget_para, result_directory)
+#
+# os.remove('price_nums.csv')
+# print('price_nums.csv file has been removed')

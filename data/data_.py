@@ -253,7 +253,8 @@ def to_DRLB_data(campaign_id, type, train_data, test_data):
     test_to_data = {'clk': clk_arrays, 'pCTR': ctr_arrays, 'pay_price': pay_price_arrays,
                     'time_fraction': origin_time_arrays}
     test_to_data_df = pd.DataFrame(data=test_to_data)
-    test_to_data_df.to_csv('../src/DRLB/data/' + campaign_id + '/test_DRLB_' + type + '.csv', index=None)
+    columns = ['clk', 'pCTR', 'pay_price', 'time_fraction']
+    test_to_data_df[columns].to_csv('../src/DRLB/data/' + campaign_id + '/test_DRLB_' + type + '.csv', index=None)
 
 
 def to_RLB_data(campaign_id, type, train_data, test_data):
@@ -270,12 +271,12 @@ def to_RLB_data(campaign_id, type, train_data, test_data):
                       'pctr': train_data[:, 3].astype(float), 'hour': train_data[:, 2].astype(int)}
     rlb_test_data = {'clk': test_data[:, 0].astype(int), 'market_price': test_data[:, 1].astype(int),
                      'pctr': test_data[:, 3].astype(float), 'hour': test_data[:, 2].astype(int)}
-
+    columns = ['clk', 'market_price', 'pctr', 'hour']
     rlb_train_data_df = pd.DataFrame(data=rlb_train_data)
-    rlb_train_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/train.theta.' + type + '.txt', index=None,
+    rlb_train_data_df[columns].to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/train.theta.' + type + '.txt', index=None,
                              header=None)
     rlb_test_data_df = pd.DataFrame(data=rlb_test_data)
-    rlb_test_data_df.to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/test.theta.' + type + '.txt', index=None, header=None)
+    rlb_test_data_df[columns].to_csv('../src/RLB/data/ipinyou-data/' + campaign_id + '/test.theta.' + type + '.txt', index=None, header=None)
 
 
 if __name__ == '__main__':

@@ -275,7 +275,7 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
     actions_df = pd.read_csv(action_file, header=None).drop([0])
 
     actions = actions_df.iloc[max_result_index, 1:].tolist()
-
+    print(actions)
     test_env(result_directory, budget_para, test_data, init_lamda, actions)
 
 def time_fraction_to_time_slot(records):
@@ -467,7 +467,7 @@ for k in range(time_slots):
     for l in range(4):
         time_slot_indexs.setdefault(times_of_four - l, int(times_of_four / 4))
 
-budget_paras = [0.0625]
+budget_paras = [0.125]
 campaign_id = data_type['campaign_id']
 project_name = 'DRLB'
 
@@ -495,11 +495,11 @@ for budget_para in budget_paras:
     print('\n------budget_para:{}------'.format(budget_para))
     list_metrics(budget_para, result_directory)
 
-print('\n##########Action Distribution##########')
-for budget_para in budget_paras:
-    print('\n------budget_para:{}------'.format(budget_para))
-    action_distribution(budget_para, result_directory)
-
-os.remove('price_nums.csv')
-print('price_nums.csv file has been removed')
+# print('\n##########Action Distribution##########')
+# for budget_para in budget_paras:
+#     print('\n------budget_para:{}------'.format(budget_para))
+#     action_distribution(budget_para, result_directory)
+#
+# os.remove('price_nums.csv')
+# print('price_nums.csv file has been removed')
 

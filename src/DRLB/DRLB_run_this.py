@@ -304,15 +304,15 @@ def run_env(budget_para):
         test_records_array.append(test_records)
         test_actions_array.append(test_actions)
 
-        print('\n---------all测试---------\n')
-        test_all_records, test_all_actions = run_all_test(budget_para, original_ctr)
-        test_all_records_array.append(test_all_records)
-        test_all_actions_array.append(test_all_actions)
-
-        print('\n---------down测试---------\n')
-        test_down_records, test_down_actions = run_down_test(budget_para, original_ctr)
-        test_down_records_array.append(test_down_records)
-        test_down_actions_array.append(test_down_actions)
+        # print('\n---------all测试---------\n')
+        # test_all_records, test_all_actions = run_all_test(budget_para, original_ctr)
+        # test_all_records_array.append(test_all_records)
+        # test_all_actions_array.append(test_all_actions)
+        #
+        # print('\n---------down测试---------\n')
+        # test_down_records, test_down_actions = run_down_test(budget_para, original_ctr)
+        # test_down_records_array.append(test_down_records)
+        # test_down_actions_array.append(test_down_actions)
 
         episode_result_data = [episode_imps, episode_win_imps, episode_clks, episode_real_clks,
                                episode_profit, budget, episode_spent, episode_spent / episode_win_imps if episode_win_imps > 0 else 0]
@@ -329,22 +329,22 @@ def run_env(budget_para):
         'result/' + data_type['campaign_id'] + data_type['type'] + '/test_episode_actions_' + str(budget_para) + '.csv')
 
     # all sample
-    test_all_records_array_df = pd.DataFrame(data=test_all_records_array)
-    test_all_records_array_df.to_csv(
-        'result/' + data_type['campaign_id'] + data_type['type'] + '/all_sample/test_episode_results_' + str(budget_para) + '.csv')
-
-    test_all_actions_array_df = pd.DataFrame(data=test_all_actions_array)
-    test_all_actions_array_df.to_csv(
-        'result/' + data_type['campaign_id'] + data_type['type'] + '/all_sample/test_episode_actions_' + str(budget_para) + '.csv')
-
-    # down sample
-    test_down_records_array_df = pd.DataFrame(data=test_down_records_array)
-    test_down_records_array_df.to_csv(
-        'result/' + data_type['campaign_id'] + data_type['type'] + '/down_sample/test_episode_results_' + str(budget_para) + '.csv')
-
-    test_down_actions_array_df = pd.DataFrame(data=test_down_actions_array)
-    test_down_actions_array_df.to_csv(
-        'result/' + data_type['campaign_id'] + data_type['type'] + '/down_sample/test_episode_actions_' + str(budget_para) + '.csv')
+    # test_all_records_array_df = pd.DataFrame(data=test_all_records_array)
+    # test_all_records_array_df.to_csv(
+    #     'result/' + data_type['campaign_id'] + data_type['type'] + '/all_sample/test_episode_results_' + str(budget_para) + '.csv')
+    #
+    # test_all_actions_array_df = pd.DataFrame(data=test_all_actions_array)
+    # test_all_actions_array_df.to_csv(
+    #     'result/' + data_type['campaign_id'] + data_type['type'] + '/all_sample/test_episode_actions_' + str(budget_para) + '.csv')
+    #
+    # # down sample
+    # test_down_records_array_df = pd.DataFrame(data=test_down_records_array)
+    # test_down_records_array_df.to_csv(
+    #     'result/' + data_type['campaign_id'] + data_type['type'] + '/down_sample/test_episode_results_' + str(budget_para) + '.csv')
+    #
+    # test_down_actions_array_df = pd.DataFrame(data=test_down_actions_array)
+    # test_down_actions_array_df.to_csv(
+    #     'result/' + data_type['campaign_id'] + data_type['type'] + '/down_sample/test_episode_actions_' + str(budget_para) + '.csv')
 
     action_df = pd.DataFrame(data=episode_action_records)
     action_df.to_csv('result/' + data_type['campaign_id'] + data_type['type'] + '/train_episode_actions_' + str(budget_para) + '.csv')

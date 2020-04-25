@@ -189,7 +189,7 @@ def to_bids(is_sample, budget_para, campaign_id, result_directory):
 
     max_result_index = max_train_index(result_directory, budget_para)
     actions = actions_df.iloc[max_result_index, 1:].tolist()
-
+    print(actions)
     test_env(result_directory, budget, budget_para, test_data, eCPC, actions)
 
     return pd_test_data
@@ -365,7 +365,7 @@ def ctr_statistics(budget_para, result_directory):
 # 由启发式算法得到最优eCPC 1458-60920.22773088766,38767.41764692851,33229.21512593873, 22152.81008395915‬
 # 3386-77901.22125145316‬,47939.21307781733,35954.409808363,23969.60653890866‬
 
-budget_paras = [0.0625]
+budget_paras = [0.125]
 campaign_id = data_type['campaign_id']
 project_name = 'FAB_BN'
 
