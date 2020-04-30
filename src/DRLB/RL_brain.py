@@ -27,13 +27,13 @@ class Net(nn.Module):
         neuron_nums = [100, 100, 100]
         self.mlp = nn.Sequential(
             nn.Linear(deep_input_dims, neuron_nums[0]),
-            nn.BatchNorm1d(neuron_nums[0]),
+            # nn.BatchNorm1d(neuron_nums[0]),
             nn.ReLU(),
             nn.Linear(neuron_nums[0], neuron_nums[1]),
-            nn.BatchNorm1d(neuron_nums[1]),
+            # nn.BatchNorm1d(neuron_nums[1]),
             nn.ReLU(),
             nn.Linear(neuron_nums[1], neuron_nums[2]),
-            nn.BatchNorm1d(neuron_nums[2]),
+            # nn.BatchNorm1d(neuron_nums[2]),
             nn.ReLU(),
             nn.Linear(neuron_nums[2], action_nums)
         )

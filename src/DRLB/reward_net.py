@@ -20,16 +20,22 @@ class Net(nn.Module):
 
         deep_input_dims = feature_numbers + action_numbers
         self.bn_input = nn.BatchNorm1d(deep_input_dims)
-        layers = list()
-        neuron_nums = [100, 100, 100]
-        for neuron_num in neuron_nums:
-            layers.append(nn.Linear(deep_input_dims, neuron_num))
-            layers.append(nn.BatchNorm1d(neuron_num))
-            layers.append(nn.ReLU())
-            deep_input_dims = neuron_num
-        layers.append(nn.Linear(deep_input_dims, reward_numbers))
+        self.bn_input.weight.data.fill_(1)
+        self.bn_input.bias.data.fill_(0)
 
-        self.mlp = nn.Sequential(*layers)
+        neuron_nums = [100, 100, 100]
+        self.mlp = nn.Sequential(
+            nn.Linear(deep_input_dims, neuron_nums[0]),
+            nn.BatchNorm1d(neuron_nums[0]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[0], neuron_nums[1]),
+            nn.BatchNorm1d(neuron_nums[1]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[1], neuron_nums[2]),
+            nn.BatchNorm1d(neuron_nums[2]),
+            nn.ReLU(),
+            nn.Linear(neuron_nums[2], reward_numbers)
+        )
 
     def forward(self, input):
         actions_value = self.mlp(self.bn_input(input))
