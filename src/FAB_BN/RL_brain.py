@@ -106,7 +106,7 @@ class DDPG():
         with torch.no_grad():
             a_b_s_ = self.Actor_(b_s_)
             q1_target, q2_target = \
-                self.Critic_.evaluate(b_s_, torch.clamp(a_b_s_ + torch.randn_like(a_b_s_) * 0.2, -0.99, 0.99))
+                self.Critic_.evaluate(b_s_, torch.clamp(a_b_s_ + torch.clamp(torch.randn_like(a_b_s_) * 0.2, -0.5, 0.5), -0.99, 0.99))
             # print(q1_target, q2_target)
             q_target = torch.min(q1_target, q2_target)
             q_target = b_r + self.gamma * torch.mul(q_target, 1 - b_dones)

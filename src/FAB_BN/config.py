@@ -15,7 +15,7 @@ config = {
     'data_feature_index': 1, # 15:train-fm,1
     'state_feature_num': 1, #,1
     # ctr 预测参数：./ffm-train -l 0.00001 -k 10 -t 20 -r 0.03 -s {nr_thread} {save}train_{data_name}_{day}.ffm
-    'budget_para': [1/16],
+    'budget_para': [1/2],
     'train_episodes': 5000,
     'neuron_nums_c_1': 50,
     'neuron_nums_c_2': 40,
