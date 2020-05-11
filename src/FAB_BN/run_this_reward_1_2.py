@@ -75,38 +75,59 @@ def choose_eCPC(campaign, original_ctr):
 #
 #     return reward_t / n
 
-def adjust_reward(auc_len, e_no_adjust_bids, e_no_adjust_bids_clks, sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, e_clks, real_clks,
+def adjust_reward(auc_len, e_no_adjust_bids, e_no_adjust_bids_clks, fraction, sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, e_clks, real_clks,
                   e_lose_imp_with_clk_value,
                   e_clk_aucs,
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t):
     if auc_len > 0:
-        rl_clks = np.sum(e_clks[:t+1]) / total_clks
-        h_clks = np.sum(e_no_adjust_bids_clks[:t+1]) / total_clks
-
-        rl_cost = np.sum(e_cost[:t + 1]) / budget
-        h_cost = np.sum(e_no_adjust_bids[:t + 1]) / budget
-
-        # rl_clks = e_clks[t] / total_clks
-        # h_clks = e_no_adjust_bids_clks[t] / total_clks
+        # rl_clks = np.sum(e_clks[:t+1]) / total_clks
+        # h_clks = np.sum(e_no_adjust_bids_clks[:t+1]) / total_clks
         #
-        # rl_cost = e_cost[t] / budget
-        # h_cost = e_no_adjust_bids[t] / budget
+        # rl_cost = np.sum(e_cost[:t + 1]) / budget
+        # h_cost = np.sum(e_no_adjust_bids[:t + 1]) / budget
+
+        rl_clks = e_clks[t]
+        h_clks = e_no_adjust_bids_clks[t]
+
+        rl_cost = e_cost[t] / budget
+        h_cost = e_no_adjust_bids[t] / budget
 
         # reward_t = rl_cost / rl_clks - h_cost / h_clks if rl_clks > 0 and h_clks > 0 else -1
         # reward_t = (rl_clks - h_clks) / (rl_cost - h_cost)
-        remain_rl = ((budget - np.sum(e_cost[:t + 1])) / budget) / ((total_clks - np.sum(e_clks[:t+1])) / total_clks)
-        remain_h = ((budget - np.sum(e_no_adjust_bids[:t + 1])) / budget) / ((total_clks - np.sum(e_no_adjust_bids_clks[:t+1])) / total_clks)
 
-        x = rl_cost / rl_clks if rl_clks > 0 else 0
-        y = h_cost / h_clks if h_clks > 0 else 0
+        if rl_cost >= h_cost:
+            if rl_clks >= h_clks:
+                reward_t = 2.5
+            else:
+                reward_t = -10
+        else:
+            if rl_clks >= h_clks:
+                reward_t = 10
+            else:
+                reward_t = -5
 
-        reward_t = (rl_clks - h_clks) * (remain_rl - remain_h)
+        # print(((budget - np.sum(e_cost[:t+1])) / budget) / ((total_clks - np.sum(real_clks[:t+1])) / total_clks))
+        # if np.sum(e_cost[:t + 1]) >= budget:
+        #     if t < fraction - 1:
+        #         reward_t = -1
+        #         # print('1', reward_t)
+        #     else:
+        #         reward_t = rl_clks - h_clks
+        #         # print('2', reward_t)
+        #
+        # else:
+        #     reward_t = rl_clks - h_clks + h_cost - rl_cost
+        #     # print('3', reward_t, rl_clks - h_clks, h_cost - rl_cost)
 
-        # print(remain_rl - remain_h)
+        # x = rl_cost / rl_clks if rl_clks > 0 else 0
+        # y = h_cost / h_clks if h_clks > 0 else 0
+        #
+        # reward_t = rl_clks - h_clks - rl_cost / h_cost
+        # print(reward_t)
     else:
         reward_t = 0
 
-    n = 1e3 # 奖励函数type1的缩放因子
+    n = 1 # 奖励函数type1的缩放因子
 
     return reward_t / n
 
@@ -265,6 +286,26 @@ def run_env(budget_para):
             market_price_win_t = market_prices_t[bids >= auc_datas[:, config['data_marketprice_index']]]
 
             no_win_imps_market_prices_t = np.sum(no_win_auctions[:, config['data_marketprice_index']])
+
+            if np.sum(e_no_adjust_bids) >= budget:
+                e_no_adjust_bids[t] = 0
+                e_no_adjust_bids_clks[t] = 0
+
+                for i in range(len(auc_datas)):
+                    if e_no_adjust_bids[t] >= (budget - np.sum(e_no_adjust_bids[:t])):
+                        break
+                    current_data = auc_datas[i, :]
+
+                    temp_clk = int(current_data[config['data_clk_index']])
+                    temp_market_price = current_data[config['data_marketprice_index']]
+
+                    origin_bid = current_data[config['data_pctr_index']] * eCPC
+                    origin_bid = origin_bid if origin_bid <= 300 else 300
+
+                    if origin_bid >= temp_market_price:
+                        e_no_adjust_bids[t] += temp_market_price
+                        e_no_adjust_bids_clks[t] += temp_clk
+
             if np.sum(e_cost) >= budget:
                 break_time_slot = t
                 temp_cost = 0
@@ -272,8 +313,6 @@ def run_env(budget_para):
                 temp_win_auctions = 0
                 e_clks[t] = 0
                 e_profits[t] = 0
-                e_no_adjust_bids[t] = 0
-                e_no_adjust_bids_clks[t] = 0
 
                 e_true_value[t] = 0
                 e_miss_true_value[t] = 0
@@ -320,11 +359,6 @@ def run_env(budget_para):
                     bids_t.append(bid)
                     market_prices_t.append(temp_market_price)
 
-                    origin_bid = current_data[config['data_pctr_index']] * eCPC
-                    if origin_bid >= temp_market_price:
-                        e_no_adjust_bids[t] += temp_market_price
-                        e_no_adjust_bids_clks[t] += temp_clk
-
                     if bid >= temp_market_price:
                         if temp_clk == 0:
                             e_win_imp_without_clk_cost[t] += temp_market_price
@@ -370,7 +404,7 @@ def run_env(budget_para):
             # action_ = np.clip(action_ + np.random.normal(0, 1.0) * 0.1, -0.99, 0.99)
             next_action = action_
 
-            reward_t = adjust_reward(len(auc_datas), e_no_adjust_bids, e_no_adjust_bids_clks, sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, e_clks, real_clks,
+            reward_t = adjust_reward(len(auc_datas), e_no_adjust_bids, e_no_adjust_bids_clks, fraction_type, sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value, e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost, e_win_imp_without_clk_cost, e_clks, real_clks,
                   e_lose_imp_with_clk_value,
                   e_clk_aucs,
                   e_clk_no_win_aucs, e_lose_imp_without_clk_cost, e_no_clk_aucs, e_no_clk_no_win_aucs, no_win_imps_market_prices_t, budget, total_clks, t)
@@ -515,7 +549,6 @@ def test_env(budget, budget_para, test_data, eCPC):
         actions[t] = action
 
         origin_bids = auc_datas[auc_datas[:, config['data_pctr_index']] * eCPC >= auc_datas[:, config['data_marketprice_index']]]
-        # print(bids, origin_bids)
         e_no_adjust_bids[t] = np.sum(origin_bids[:, config['data_marketprice_index']])
         e_no_adjust_bids_clks[t] = np.sum(origin_bids[:, config['data_clk_index']])
 
@@ -554,6 +587,26 @@ def test_env(budget, budget_para, test_data, eCPC):
         market_price_win_t = market_prices_t[bids >= auc_datas[:, config['data_marketprice_index']]]
 
         no_win_imps_market_prices_t = np.sum(no_win_auctions[:, config['data_marketprice_index']])
+
+        if np.sum(e_no_adjust_bids) >= budget:
+            e_no_adjust_bids[t] = 0
+            e_no_adjust_bids_clks[t] = 0
+
+            for i in range(len(auc_datas)):
+                if e_no_adjust_bids[t] >= (budget - np.sum(e_no_adjust_bids[:t])):
+                    break
+                current_data = auc_datas[i, :]
+
+                temp_clk = int(current_data[config['data_clk_index']])
+                temp_market_price = current_data[config['data_marketprice_index']]
+
+                origin_bid = current_data[config['data_pctr_index']] * eCPC
+                origin_bid = origin_bid if origin_bid <= 300 else 300
+
+                if origin_bid >= temp_market_price:
+                    e_no_adjust_bids[t] += temp_market_price
+                    e_no_adjust_bids_clks[t] += temp_clk
+
         if np.sum(e_cost) >= budget:
             break_time_slot = t
             temp_cost = 0
@@ -561,8 +614,6 @@ def test_env(budget, budget_para, test_data, eCPC):
             temp_win_auctions = 0
             e_clks[t] = 0
             e_profits[t] = 0
-            e_no_adjust_bids[t] = 0
-            e_no_adjust_bids_clks[t] = 0
 
             e_true_value[t] = 0
             e_miss_true_value[t] = 0
@@ -609,11 +660,6 @@ def test_env(budget, budget_para, test_data, eCPC):
                 bids_t.append(bid)
                 market_prices_t.append(temp_market_price)
 
-                origin_bid = current_data[config['data_pctr_index']] * eCPC
-                if origin_bid >= temp_market_price:
-                    e_no_adjust_bids[t] += temp_market_price
-                    e_no_adjust_bids_clks[t] += temp_clk
-
                 if bid >= temp_market_price:
                     if temp_clk == 0:
                         e_win_imp_without_clk_cost[t] += temp_market_price
@@ -659,7 +705,7 @@ def test_env(budget, budget_para, test_data, eCPC):
         # action_ = np.clip(action_ + np.random.normal(0, 1.0) * 0.1, -0.99, 0.99)
         next_action = action_
 
-        reward_t = adjust_reward(len(auc_datas), e_no_adjust_bids, e_no_adjust_bids_clks, sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value,
+        reward_t = adjust_reward(len(auc_datas), e_no_adjust_bids, e_no_adjust_bids_clks, fraction_type, sum_market_price, market_prices, sum_to_market_prices, real_hour_clks, e_true_value,
                                  e_miss_true_value, bid_win_t, market_price_win_t, e_win_imp_with_clk_value, e_cost,
                                  e_win_imp_without_clk_cost, e_clks, real_clks,
                                  e_lose_imp_with_clk_value,

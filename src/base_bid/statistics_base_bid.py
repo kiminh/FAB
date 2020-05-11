@@ -156,7 +156,7 @@ log_path = 'result/'
 
 result_directory = log_path + campaign_id + result_file
 
-algo = 'lin'
+algo = 'lin_opt'
 
 # print('\n##########To Bids.csv files##########')
 # for budget_para in budget_paras:

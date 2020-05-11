@@ -365,7 +365,7 @@ def ctr_statistics(budget_para, result_directory):
 # 由启发式算法得到最优eCPC 1458-60920.22773088766,38767.41764692851,33229.21512593873, 22152.81008395915‬
 # 3386-77901.22125145316‬,47939.21307781733,35954.409808363,23969.60653890866‬
 
-budget_paras = [0.125]
+budget_paras = [0.5]
 campaign_id = data_type['campaign_id']
 project_name = 'FAB_BN'
 

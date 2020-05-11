@@ -12,8 +12,6 @@ def setup_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
-# 设置随机数种子
-setup_seed(1)
 
 class DDPG():
     def __init__(
@@ -37,6 +35,9 @@ class DDPG():
         self.batch_size = batch_size
         self.tau = tau
         self.device = device
+
+        # 设置随机数种子
+        setup_seed(1)
 
         if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
@@ -67,7 +68,7 @@ class DDPG():
         self.Actor.eval()
         with torch.no_grad():
             action = self.Actor.forward(state)
-            action = torch.clamp(action + torch.randn_like(action) * 0.2, -0.99, 0.99)
+            action = torch.clamp(action + torch.randn_like(action) * 0.1, -0.99, 0.99)
 
         self.Actor.train()
 
@@ -123,8 +124,8 @@ class DDPG():
         self.learn_iter += 1
 
         a_loss_r = 0
-        if self.learn_iter % 10 == 0:
-            a_b_s = torch.clamp(self.Actor(b_s), -0.99, 0.99)
+        if self.learn_iter % 3 == 0:
+            a_b_s = self.Actor(b_s)
             # print(a_b_s)
             # print(a_b_s)
             a_loss = -self.Critic.evaluate_1(b_s, a_b_s).mean() + (a_b_s ** 2).mean() * 1e-2
